@@ -45,8 +45,7 @@ export default function HomePage() {
               Supporting Every Step of Your Journey
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              From lived experiences to practical tools, we're here to guide, encourage, and connect you.
-            </p>
+            From lived experiences to practical tools, we&apos;re here to guide, encourage, and connect you.            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -87,7 +86,7 @@ export default function HomePage() {
                 Built on Real Understanding
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Our platform is informed by extensive research into the bipolar community's actual needs, 
+              Our platform is informed by extensive research into the bipolar community&apos;s actual needs, 
                 challenges, and experiences. We focus on what matters most to you.
               </p>
               <div className="space-y-4">
@@ -107,8 +106,8 @@ export default function HomePage() {
             </div>
             <div className="bg-white p-8 rounded-2xl shadow-lg">
               <blockquote className="text-lg text-gray-700 italic mb-4">
-                "I feel like a passenger in my own body during episodes, watching myself 
-                do things I can't control but remembering everything afterward."
+              &ldquo;I feel like a passenger in my own body during episodes, watching myself 
+              do things I can&apos;t control but remembering everything afterward.&rdquo;
               </blockquote>
               <p className="text-sm text-gray-500">— Community Research Insight</p>
             </div>
@@ -125,7 +124,7 @@ export default function HomePage() {
                 Need Immediate Support?
               </h3>
               <p className="text-red-700">
-                If you're in crisis, please reach out for immediate help.
+              If you&apos;re in crisis, please reach out for immediate help.
               </p>
             </div>
             <div className="mt-4 md:mt-0 space-y-2 md:space-y-0 md:space-x-4 md:flex">
