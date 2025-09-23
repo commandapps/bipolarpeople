@@ -25,7 +25,7 @@ const tools = [
     icon: <DocumentTextIcon className="h-8 w-8" />,
     color: "text-green-600",
     bgColor: "bg-green-50 border-green-200", 
-    status: "Coming Soon"
+    status: "Available Now"
   },
   {
     name: "Episode Planner",
@@ -34,7 +34,7 @@ const tools = [
     icon: <CalendarDaysIcon className="h-8 w-8" />,
     color: "text-purple-600",
     bgColor: "bg-purple-50 border-purple-200",
-    status: "Coming Soon" 
+    status: "Available Now" 
   },
   {
     name: "Medication Tracker",
@@ -43,7 +43,7 @@ const tools = [
     icon: <HeartIcon className="h-8 w-8" />,
     color: "text-red-600", 
     bgColor: "bg-red-50 border-red-200",
-    status: "Coming Soon"
+    status: "Available Now"
   }
 ]
 
