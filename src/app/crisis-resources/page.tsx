@@ -1,4 +1,5 @@
 import { PhoneIcon, ChatBubbleLeftRightIcon, ExclamationTriangleIcon, HeartIcon, ClockIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
 
 const immediateHelpResources = [
   {
@@ -310,12 +311,7 @@ export default function CrisisResourcesPage() {
             >
               Call 988 Now
             </a>
-            <a
-              href="/"
-              className="border border-white text-white px-8 py-3 rounded-lg font-bold hover:bg-white hover:bg-opacity-10 transition-colors"
-            >
-              Return to Community
-            </a>
+            <Link href="/" className="border border-white text-white px-8 py-3 rounded-lg font-bold hover:bg-white hover:bg-opacity-10 transition-colors">Return to Community</Link>
           </div>
         </div>
       </section>
@@ -323,10 +319,7 @@ export default function CrisisResourcesPage() {
   )
 }
 
-function CrisisResourceCard({ resource, urgent }: { 
-  resource: any, 
-  urgent: boolean 
-}) {
+function CrisisResourceCard({ resource, urgent }: { resource: { name: string; description: string; phone?: string; website?: string; available: string; languages?: string; services?: string[] }, urgent: boolean }) {
   const cardClass = urgent 
     ? "bg-white border-2 border-red-200 hover:border-red-300" 
     : "bg-white border border-gray-200 hover:border-gray-300"
@@ -393,7 +386,7 @@ function CrisisResourceCard({ resource, urgent }: {
   )
 }
 
-function WarningSignsCard({ category }: { category: any }) {
+function WarningSignsCard({ category }: { category: { category: string; signs: string[] } }) {
   return (
     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
       <h3 className="text-lg font-bold text-yellow-900 mb-4">
