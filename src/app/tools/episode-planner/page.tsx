@@ -180,8 +180,8 @@ CRISIS NUMBERS:
               title="Depression Warning Signs"
               items={editingPlan.warningSignsDepression || []}
               placeholder="e.g., Sleeping too much, loss of appetite, withdrawing from friends"
-              onAdd={(item) => addItem('warningSignsDepression', item)}
-              onRemove={(index) => removeItem('warningSignsDepression', index)}
+              onAdd={(item: string) => addItem('warningSignsDepression', item)}
+              onRemove={(index: number) => removeItem('warningSignsDepression', index)}
             />
 
             {/* Mania Warning Signs */}
@@ -189,8 +189,8 @@ CRISIS NUMBERS:
               title="Mania Warning Signs" 
               items={editingPlan.warningSignsMania || []}
               placeholder="e.g., Sleeping very little, racing thoughts, increased spending"
-              onAdd={(item) => addItem('warningSignsMania', item)}
-              onRemove={(index) => removeItem('warningSignsMania', index)}
+              onAdd={(item: string) => addItem('warningSignsMania', item)}
+              onRemove={(index: number) => removeItem('warningSignsMania', index)}
             />
 
             {/* Coping Strategies */}
@@ -198,8 +198,8 @@ CRISIS NUMBERS:
               title="Coping Strategies"
               items={editingPlan.copingStrategies || []}
               placeholder="e.g., Deep breathing, calling a friend, going for a walk"
-              onAdd={(item) => addItem('copingStrategies', item)}
-              onRemove={(index) => removeItem('copingStrategies', index)}
+              onAdd={(item: string) => addItem('copingStrategies', item)}
+              onRemove={(index: number) => removeItem('copingStrategies', index)}
             />
 
             {/* Safe Environment */}
@@ -207,32 +207,32 @@ CRISIS NUMBERS:
               title="Creating a Safe Environment"
               items={editingPlan.safeEnvironment || []}
               placeholder="e.g., Remove sharp objects, ask someone to manage finances"
-              onAdd={(item) => addItem('safeEnvironment', item)}
-              onRemove={(index) => removeItem('safeEnvironment', index)}
+              onAdd={(item: string) => addItem('safeEnvironment', item)}
+              onRemove={(index: number) => removeItem('safeEnvironment', index)}
             />
 
             {/* Support Contacts */}
             <ContactSection
               title="Support Contacts (Family & Friends)"
               contacts={editingPlan.supportContacts || []}
-              onAdd={(contact) => addItem('supportContacts', contact)}
-              onRemove={(index) => removeItem('supportContacts', index)}
+              onAdd={(contact: any) => addItem('supportContacts', contact)}
+              onRemove={(index: number) => removeItem('supportContacts', index)}
             />
 
             {/* Professional Contacts */}
             <ContactSection
               title="Professional Contacts"
               contacts={editingPlan.professionalContacts || []}
-              onAdd={(contact) => addItem('professionalContacts', contact)}
-              onRemove={(index) => removeItem('professionalContacts', index)}
+              onAdd={(contact: any) => addItem('professionalContacts', contact)}
+              onRemove={(index: number) => removeItem('professionalContacts', index)}
               isProfile={true}
             />
 
             {/* Medications */}
             <MedicationSection
               medications={editingPlan.medications || []}
-              onAdd={(medication) => addItem('medications', medication)}
-              onRemove={(index) => removeItem('medications', index)}
+              onAdd={(medication: { name: string; dosage: string; instructions: string }) => addItem('medications', medication)}
+              onRemove={(index: number) => removeItem('medications', index)}
             />
 
             {/* Hospital Preferences */}
@@ -333,5 +333,484 @@ CRISIS NUMBERS:
               </div>
             </div>
 
-            {/* <div className="space-y-4"> */}
-<div></div>
+            <div className="space-y-6">
+              {/* Depression Warning Signs */}
+              <PlanSection
+                title="Depression Warning Signs"
+                icon={<ExclamationTriangleIcon className="h-5 w-5" />}
+                items={safetyPlan.warningSignsDepression}
+                color="red"
+              />
+
+              {/* Mania Warning Signs */}
+              <PlanSection
+                title="Mania Warning Signs"
+                icon={<ExclamationTriangleIcon className="h-5 w-5" />}
+                items={safetyPlan.warningSignsMania}
+                color="yellow"
+              />
+
+              {/* Coping Strategies */}
+              <PlanSection
+                title="Coping Strategies"
+                icon={<HeartIcon className="h-5 w-5" />}
+                items={safetyPlan.copingStrategies}
+                color="green"
+              />
+
+              {/* Safe Environment */}
+              <PlanSection
+                title="Creating a Safe Environment"
+                icon={<ShieldCheckIcon className="h-5 w-5" />}
+                items={safetyPlan.safeEnvironment}
+                color="blue"
+              />
+
+              {/* Support Contacts */}
+              <ContactDisplaySection
+                title="Support Contacts"
+                icon={<UserGroupIcon className="h-5 w-5" />}
+                contacts={safetyPlan.supportContacts}
+                isProfile={false}
+              />
+
+              {/* Professional Contacts */}
+              <ContactDisplaySection
+                title="Professional Contacts"
+                icon={<PhoneIcon className="h-5 w-5" />}
+                contacts={safetyPlan.professionalContacts}
+                isProfile={true}
+              />
+
+              {/* Medications */}
+              <MedicationDisplaySection
+                title="Medications"
+                medications={safetyPlan.medications}
+              />
+
+              {/* Hospital Preferences */}
+              {safetyPlan.hospitalPreferences && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <ShieldCheckIcon className="h-5 w-5 text-blue-600" />
+                    Hospital Preferences
+                  </h3>
+                  <p className="text-gray-700 whitespace-pre-wrap">{safetyPlan.hospitalPreferences}</p>
+                </div>
+              )}
+
+              {/* Additional Notes */}
+              {safetyPlan.additionalNotes && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <DocumentTextIcon className="h-5 w-5 text-gray-600" />
+                    Additional Notes
+                  </h3>
+                  <p className="text-gray-700 whitespace-pre-wrap">{safetyPlan.additionalNotes}</p>
+                </div>
+              )}
+
+              {/* Crisis Resources */}
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-red-900 mb-4 flex items-center gap-2">
+                  <ExclamationTriangleIcon className="h-5 w-5" />
+                  Crisis Resources
+                </h3>
+                <div className="space-y-2 text-red-800">
+                  <div className="flex items-center gap-2">
+                    <PhoneIcon className="h-4 w-4" />
+                    <span><strong>988</strong> - Suicide & Crisis Lifeline</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <PhoneIcon className="h-4 w-4" />
+                    <span><strong>911</strong> - Emergency Services</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span>📱</span>
+                    <span><strong>Crisis Text Line</strong> - Text HOME to 741741</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Component for editing simple string arrays
+function EditSection({ 
+  title, 
+  items, 
+  placeholder, 
+  onAdd, 
+  onRemove 
+}: { 
+  title: string
+  items: string[]
+  placeholder: string
+  onAdd: (item: string) => void
+  onRemove: (index: number) => void
+}) {
+  const [newItem, setNewItem] = useState('')
+
+  const handleAdd = () => {
+    if (newItem.trim()) {
+      onAdd(newItem.trim())
+      setNewItem('')
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      
+      <div className="flex gap-2 mb-4">
+        <input
+          type="text"
+          value={newItem}
+          onChange={(e) => setNewItem(e.target.value)}
+          placeholder={placeholder}
+          className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+          onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
+        />
+        <button
+          onClick={handleAdd}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors"
+          title="Add item"
+        >
+          <PlusIcon className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {items.map((item, index) => (
+          <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+            <span className="text-gray-700">{item}</span>
+            <button
+              onClick={() => onRemove(index)}
+              className="text-red-600 hover:text-red-700 transition-colors"
+              title="Remove item"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Component for editing contact arrays
+function ContactSection({ 
+  title, 
+  contacts, 
+  onAdd, 
+  onRemove, 
+  isProfile = false 
+}: { 
+  title: string
+  contacts: Array<{ name: string; relationship?: string; role?: string; phone: string }>
+  onAdd: (contact: { name: string; relationship: string; phone: string } | { name: string; role: string; phone: string }) => void
+  onRemove: (index: number) => void
+  isProfile?: boolean
+}) {
+  const [newContact, setNewContact] = useState({
+    name: '',
+    relationship: '',
+    role: '',
+    phone: ''
+  })
+
+  const handleAdd = () => {
+    if (newContact.name.trim() && newContact.phone.trim()) {
+      if (isProfile) {
+        if (newContact.role.trim()) {
+          onAdd({
+            name: newContact.name.trim(),
+            role: newContact.role.trim(),
+            phone: newContact.phone.trim()
+          })
+        }
+      } else {
+        if (newContact.relationship.trim()) {
+          onAdd({
+            name: newContact.name.trim(),
+            relationship: newContact.relationship.trim(),
+            phone: newContact.phone.trim()
+          })
+        }
+      }
+      setNewContact({ name: '', relationship: '', role: '', phone: '' })
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      
+      <div className="space-y-3 mb-4">
+        <input
+          type="text"
+          value={newContact.name}
+          onChange={(e) => setNewContact(prev => ({ ...prev, name: e.target.value }))}
+          placeholder="Name"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+        />
+        <input
+          type="text"
+          value={isProfile ? newContact.role : newContact.relationship}
+          onChange={(e) => setNewContact(prev => ({ 
+            ...prev, 
+            [isProfile ? 'role' : 'relationship']: e.target.value 
+          }))}
+          placeholder={isProfile ? "Role (e.g., Therapist, Psychiatrist)" : "Relationship (e.g., Sister, Best Friend)"}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+        />
+        <input
+          type="tel"
+          value={newContact.phone}
+          onChange={(e) => setNewContact(prev => ({ ...prev, phone: e.target.value }))}
+          placeholder="Phone Number"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+        />
+        <button
+          onClick={handleAdd}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Add Contact
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {contacts.map((contact, index) => (
+          <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+            <div>
+              <div className="font-medium text-gray-900">{contact.name}</div>
+              <div className="text-sm text-gray-600">
+                {isProfile ? (contact as any).role : (contact as any).relationship} - {contact.phone}
+              </div>
+            </div>
+            <button
+              onClick={() => onRemove(index)}
+              className="text-red-600 hover:text-red-700 transition-colors"
+              title="Remove contact"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Component for editing medication arrays
+function MedicationSection({ 
+  medications, 
+  onAdd, 
+  onRemove 
+}: { 
+  medications: Array<{ name: string; dosage: string; instructions: string }>
+  onAdd: (medication: { name: string; dosage: string; instructions: string }) => void
+  onRemove: (index: number) => void
+}) {
+  const [newMedication, setNewMedication] = useState({
+    name: '',
+    dosage: '',
+    instructions: ''
+  })
+
+  const handleAdd = () => {
+    if (newMedication.name.trim() && newMedication.dosage.trim()) {
+      onAdd({
+        name: newMedication.name.trim(),
+        dosage: newMedication.dosage.trim(),
+        instructions: newMedication.instructions.trim()
+      })
+      setNewMedication({ name: '', dosage: '', instructions: '' })
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Medications</h3>
+      
+      <div className="space-y-3 mb-4">
+        <input
+          type="text"
+          value={newMedication.name}
+          onChange={(e) => setNewMedication(prev => ({ ...prev, name: e.target.value }))}
+          placeholder="Medication Name"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+        />
+        <input
+          type="text"
+          value={newMedication.dosage}
+          onChange={(e) => setNewMedication(prev => ({ ...prev, dosage: e.target.value }))}
+          placeholder="Dosage (e.g., 100mg, 2 tablets)"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+        />
+        <input
+          type="text"
+          value={newMedication.instructions}
+          onChange={(e) => setNewMedication(prev => ({ ...prev, instructions: e.target.value }))}
+          placeholder="Instructions (e.g., Take with food, twice daily)"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+        />
+        <button
+          onClick={handleAdd}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Add Medication
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {medications.map((medication, index) => (
+          <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+            <div>
+              <div className="font-medium text-gray-900">{medication.name}</div>
+              <div className="text-sm text-gray-600">
+                {medication.dosage} - {medication.instructions}
+              </div>
+            </div>
+            <button
+              onClick={() => onRemove(index)}
+              className="text-red-600 hover:text-red-700 transition-colors"
+              title="Remove medication"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Component for displaying plan sections
+function PlanSection({ 
+  title, 
+  icon, 
+  items, 
+  color 
+}: { 
+  title: string
+  icon: React.ReactNode
+  items: string[]
+  color: 'red' | 'yellow' | 'green' | 'blue'
+}) {
+  const colorClasses = {
+    red: 'border-red-200 bg-red-50',
+    yellow: 'border-yellow-200 bg-yellow-50',
+    green: 'border-green-200 bg-green-50',
+    blue: 'border-blue-200 bg-blue-50'
+  }
+
+  const iconColors = {
+    red: 'text-red-600',
+    yellow: 'text-yellow-600',
+    green: 'text-green-600',
+    blue: 'text-blue-600'
+  }
+
+  if (items.length === 0) return null
+
+  return (
+    <div className={`bg-white rounded-xl p-6 shadow-sm border ${colorClasses[color]}`}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <span className={iconColors[color]}>{icon}</span>
+        {title}
+      </h3>
+      <ul className="space-y-2">
+        {items.map((item, index) => (
+          <li key={index} className="flex items-start gap-2 text-gray-700">
+            <span className="text-gray-400 mt-1">•</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+// Component for displaying contact sections
+function ContactDisplaySection({ 
+  title, 
+  icon, 
+  contacts, 
+  isProfile 
+}: { 
+  title: string
+  icon: React.ReactNode
+  contacts: Array<{ name: string; relationship?: string; role?: string; phone: string }>
+  isProfile: boolean
+}) {
+  if (contacts.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <span className="text-blue-600">{icon}</span>
+        {title}
+      </h3>
+      <div className="space-y-3">
+        {contacts.map((contact, index) => (
+          <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+            <div>
+              <div className="font-medium text-gray-900">{contact.name}</div>
+              <div className="text-sm text-gray-600">
+                {isProfile ? (contact as any).role : (contact as any).relationship}
+              </div>
+            </div>
+            <a 
+              href={`tel:${contact.phone}`}
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              {contact.phone}
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Component for displaying medication sections
+function MedicationDisplaySection({ 
+  title, 
+  medications 
+}: { 
+  title: string
+  medications: Array<{ name: string; dosage: string; instructions: string }>
+}) {
+  if (medications.length === 0) return null
+
+  return (
+    <div className="bg-white rounded-xl p-6 shadow-sm border">
+      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <span className="text-green-600">💊</span>
+        {title}
+      </h3>
+      <div className="space-y-3">
+        {medications.map((medication, index) => (
+          <div key={index} className="bg-gray-50 p-3 rounded-lg">
+            <div className="font-medium text-gray-900">{medication.name}</div>
+            <div className="text-sm text-gray-600">
+              <strong>Dosage:</strong> {medication.dosage}
+            </div>
+            {medication.instructions && (
+              <div className="text-sm text-gray-600">
+                <strong>Instructions:</strong> {medication.instructions}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
