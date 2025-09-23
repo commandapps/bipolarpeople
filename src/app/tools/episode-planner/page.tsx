@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { 
   CalendarDaysIcon,
   ShieldCheckIcon,
@@ -83,17 +82,17 @@ export default function EpisodePlannerPage() {
     setIsEditing(true)
   }
 
-  const addItem = (field: keyof SafetyPlan, item: any) => {
+  const addItem = (field: keyof SafetyPlan, item: string | { name: string; relationship: string; phone: string } | { name: string; role: string; phone: string } | { name: string; dosage: string; instructions: string }) => {
     setEditingPlan(prev => ({
       ...prev,
-      [field]: [...(prev[field] as any[]), item]
+      [field]: [...(prev[field] as (string | { name: string; relationship: string; phone: string } | { name: string; role: string; phone: string } | { name: string; dosage: string; instructions: string })[]), item]
     }))
   }
 
   const removeItem = (field: keyof SafetyPlan, index: number) => {
     setEditingPlan(prev => ({
       ...prev,
-      [field]: (prev[field] as any[]).filter((_, i) => i !== index)
+      [field]: (prev[field] as (string | { name: string; relationship: string; phone: string } | { name: string; role: string; phone: string } | { name: string; dosage: string; instructions: string })[]).filter((_, i) => i !== index)
     }))
   }
 
@@ -215,7 +214,7 @@ CRISIS NUMBERS:
             <ContactSection
               title="Support Contacts (Family & Friends)"
               contacts={editingPlan.supportContacts || []}
-              onAdd={(contact: any) => addItem('supportContacts', contact)}
+              onAdd={(contact: { name: string; relationship: string; phone: string } | { name: string; role: string; phone: string }) => addItem('supportContacts', contact)}
               onRemove={(index: number) => removeItem('supportContacts', index)}
             />
 
@@ -223,7 +222,7 @@ CRISIS NUMBERS:
             <ContactSection
               title="Professional Contacts"
               contacts={editingPlan.professionalContacts || []}
-              onAdd={(contact: any) => addItem('professionalContacts', contact)}
+              onAdd={(contact: { name: string; relationship: string; phone: string } | { name: string; role: string; phone: string }) => addItem('professionalContacts', contact)}
               onRemove={(index: number) => removeItem('professionalContacts', index)}
               isProfile={true}
             />
@@ -590,7 +589,7 @@ function ContactSection({
             <div>
               <div className="font-medium text-gray-900">{contact.name}</div>
               <div className="text-sm text-gray-600">
-                {isProfile ? (contact as any).role : (contact as any).relationship} - {contact.phone}
+                {isProfile ? (contact as { name: string; role: string; phone: string }).role : (contact as { name: string; relationship: string; phone: string }).relationship} - {contact.phone}
               </div>
             </div>
             <button
@@ -764,7 +763,7 @@ function ContactDisplaySection({
             <div>
               <div className="font-medium text-gray-900">{contact.name}</div>
               <div className="text-sm text-gray-600">
-                {isProfile ? (contact as any).role : (contact as any).relationship}
+                {isProfile ? (contact as { name: string; role: string; phone: string }).role : (contact as { name: string; relationship: string; phone: string }).relationship}
               </div>
             </div>
             <a 
