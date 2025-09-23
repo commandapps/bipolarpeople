@@ -333,4 +333,4 @@ CRISIS NUMBERS:
               </div>
             </div>
 
-            <div className="space
+            <div className="space-y-4">
