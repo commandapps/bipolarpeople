@@ -349,7 +349,7 @@ function TemplateCard({
   }
 
   return (
-    <div className={`${colorClasses[template.color]} border rounded-xl p-6 transition-all hover:shadow-md`}>
+    <div className={`${colorClasses[template.color as keyof typeof colorClasses] || colorClasses.blue} border rounded-xl p-6 transition-all hover:shadow-md`}>
       <div className="mb-4">
         <DocumentTextIcon className="h-8 w-8 mb-3" />
         <h3 className="text-xl font-bold text-gray-900 mb-2">

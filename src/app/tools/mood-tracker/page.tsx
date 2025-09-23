@@ -4,9 +4,6 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
   ChartBarIcon, 
-  CalendarDaysIcon, 
-  MoonIcon, 
-  SunIcon,
   HeartIcon,
   ClockIcon,
   DocumentArrowDownIcon,
