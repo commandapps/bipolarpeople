@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeftIcon, BookOpenIcon, BrainIcon, HeartIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, BookOpenIcon, CpuChipIcon, HeartIcon } from '@heroicons/react/24/outline'
 
 export default function AboutBipolarPage() {
   return (
@@ -72,7 +72,7 @@ export default function AboutBipolarPage() {
             
             <div className="grid md:grid-cols-3 gap-6 my-8">
               <div className="text-center">
-                <BrainIcon className="h-12 w-12 text-purple-600 mx-auto mb-3" />
+                <CpuChipIcon className="h-12 w-12 text-purple-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Cognitive Effects</h3>
                 <p className="text-gray-600 text-sm">
                   25.2% experience brain fog, memory issues, and concentration difficulties
