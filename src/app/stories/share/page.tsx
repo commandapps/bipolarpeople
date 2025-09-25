@@ -59,7 +59,7 @@ export default function ShareStoryPage() {
             <h1 className="text-3xl font-bold text-gray-900">Share Your Story</h1>
           </div>
 
-          <p className="text-lg text-gray-600 mb-8">
+          <p className="text-lg text-gray-800 mb-8 leading-relaxed">
             Your experience matters. By sharing your story, you help break stigma and provide hope to others on their bipolar journey.
           </p>
 
@@ -88,7 +88,7 @@ export default function ShareStoryPage() {
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="Give your story a compelling title..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
               />
             </div>
 
@@ -103,7 +103,7 @@ export default function ShareStoryPage() {
                 required
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
               >
                 <option value="">Select a category...</option>
                 {categories.map(category => (
@@ -127,7 +127,7 @@ export default function ShareStoryPage() {
                 onChange={handleChange}
                 rows={12}
                 placeholder="Share your experience in your own words. What happened? How did you cope? What did you learn? What would you tell someone going through something similar?"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Tip: Focus on your journey, what helped you, and messages of hope. Avoid specific medical advice.
@@ -151,7 +151,7 @@ export default function ShareStoryPage() {
                     value={formData.authorName}
                     onChange={handleChange}
                     placeholder="Your name or preferred pseudonym"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                   />
                 </div>
 
@@ -181,7 +181,7 @@ export default function ShareStoryPage() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="For communication about your story only"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Never displayed publicly. Used only to contact you about your story.

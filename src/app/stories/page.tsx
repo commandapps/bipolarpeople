@@ -59,7 +59,7 @@ export default function ShareStoryPage() {
             <h1 className="text-3xl font-bold text-gray-900">Share Your Story</h1>
           </div>
 
-          <p className="text-lg text-gray-600 mb-8">
+          <p className="text-lg text-gray-800 mb-8 leading-relaxed">
             Your experience matters. By sharing your story, you help break stigma and provide hope to others on their bipolar journey.
           </p>
 

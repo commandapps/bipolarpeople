@@ -28,7 +28,7 @@ export default function AboutBipolarPage() {
           </div>
 
           <div className="prose prose-lg max-w-none">
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-xl text-gray-800 mb-8 leading-relaxed">
               Bipolar disorder is a mental health condition that causes significant shifts in mood, energy, and activity levels that affect a person's ability to carry out day-to-day tasks.
             </p>
 
@@ -74,7 +74,7 @@ export default function AboutBipolarPage() {
               <div className="text-center">
                 <CpuChipIcon className="h-12 w-12 text-purple-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Cognitive Effects</h3>
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-800 text-sm leading-relaxed">
                   25.2% experience brain fog, memory issues, and concentration difficulties
                 </p>
               </div>
@@ -82,7 +82,7 @@ export default function AboutBipolarPage() {
               <div className="text-center">
                 <HeartIcon className="h-12 w-12 text-red-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Physical Symptoms</h3>
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-800 text-sm leading-relaxed">
                   Joint pain, fatigue, and other physical manifestations often accompany episodes
                 </p>
               </div>
@@ -90,7 +90,7 @@ export default function AboutBipolarPage() {
               <div className="text-center">
                 <BookOpenIcon className="h-12 w-12 text-green-600 mx-auto mb-3" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Daily Impact</h3>
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-800 text-sm leading-relaxed">
                   Affects work, relationships, and basic self-care activities
                 </p>
               </div>
