@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRightIcon, HeartIcon, UserGroupIcon, BookOpenIcon, ChartBarIcon } from '@heroicons/react/24/outline'
+import { ArrowRightIcon, HeartIcon, UserGroupIcon, BookOpenIcon, ChartBarIcon, UserIcon } from '@heroicons/react/24/outline'
 
 export default function HomePage() {
   // Force deployment update - version 0.1.1
@@ -33,6 +33,51 @@ export default function HomePage() {
               >
                 Explore Resources
               </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Story */}
+      <section className="py-16 bg-gradient-to-r from-indigo-50 to-purple-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Featured Story
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Real experiences from our community that inspire hope and understanding
+            </p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
+                  <UserIcon className="w-8 h-8 text-indigo-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  "I Stopped Hiding My Bipolar Disorder"
+                </h3>
+                <p className="text-gray-600">by Sarah M.</p>
+              </div>
+              
+              <blockquote className="text-xl md:text-2xl text-gray-700 italic leading-relaxed mb-8 text-center">
+                "For years, I was terrified that people would find out about my bipolar disorder. 
+                I thought they'd see me as unstable, unreliable, or even dangerous. But when I finally 
+                started sharing my story, I discovered that vulnerability became my greatest strength. 
+                Now I help others realize that having bipolar disorder doesn't make you broken—it makes you brave."
+              </blockquote>
+              
+              <div className="text-center">
+                <Link
+                  href="/stories/1"
+                  className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Read Full Story
+                  <ArrowRightIcon className="ml-2 w-5 h-5" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
