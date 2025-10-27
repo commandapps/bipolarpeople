@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { Disclosure, Menu, Transition } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon, HeartIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 import { Fragment } from 'react'
+import UserMenu from '@/components/auth/UserMenu'
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -31,6 +33,7 @@ const navigation = [
 
 export default function Navigation() {
   const pathname = usePathname()
+  const { data: session, status } = useSession()
 
   return (
     <Disclosure as="nav" className="bg-white shadow-sm sticky top-0 z-50">
@@ -107,6 +110,18 @@ export default function Navigation() {
                   )
                 ))}
                 <div className="flex items-center gap-4 ml-6">
+                  {status === 'loading' ? (
+                    <div className="w-8 h-8 bg-gray-100 rounded-full animate-pulse"></div>
+                  ) : session ? (
+                    <UserMenu user={session.user} />
+                  ) : (
+                    <Link
+                      href="/login"
+                      className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                  )}
                   <Link
                     href="/crisis-resources"
                     className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -176,12 +191,30 @@ export default function Navigation() {
                   </Link>
                 )
               ))}
-              <Link
-                href="/crisis-resources"
-                className="block px-3 py-2 text-base font-medium rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors mt-4"
-              >
-                Crisis Resources
-              </Link>
+              <div className="mt-4 space-y-2">
+                {status === 'loading' ? (
+                  <div className="px-3 py-2 text-base font-medium rounded-md bg-gray-100 animate-pulse">
+                    Loading...
+                  </div>
+                ) : session ? (
+                  <div className="px-3 py-2 text-base font-medium rounded-md bg-blue-50 text-blue-700">
+                    Welcome, {session.user?.name || 'User'}
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="block px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                )}
+                <Link
+                  href="/crisis-resources"
+                  className="block px-3 py-2 text-base font-medium rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
+                >
+                  Crisis Resources
+                </Link>
+              </div>
             </div>
           </Disclosure.Panel>
         </>

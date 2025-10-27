@@ -1,5 +1,10 @@
 // app/community/page.tsx
+'use client'
+
 import { Metadata } from 'next'
+import { useSession } from 'next-auth/react'
+import Link from 'next/link'
+import { LockClosedIcon, UserGroupIcon } from '@heroicons/react/24/outline'
 
 export const metadata: Metadata = {
   title: 'Community - Bipolar People',
@@ -7,6 +12,7 @@ export const metadata: Metadata = {
 }
 
 export default function CommunityPage() {
+  const { data: session, status } = useSession()
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Hero Section */}
@@ -30,10 +36,22 @@ export default function CommunityPage() {
               </div>
               <h3 className="font-semibold text-blue-900">Safe Space Promise</h3>
             </div>
-            <p className="text-blue-800 text-sm">
+            <p className="text-blue-800 text-sm mb-3">
               Our community is actively moderated by mental health professionals and trained peer supporters. 
               Anonymous participation is always welcome.
             </p>
+            {session && (
+              <div className="flex items-center gap-2 text-blue-700 text-sm">
+                <UserGroupIcon className="w-4 h-4" />
+                <span>Welcome back, {session.user?.name || 'Member'}!</span>
+              </div>
+            )}
+            {!session && (
+              <div className="flex items-center gap-2 text-blue-700 text-sm">
+                <LockClosedIcon className="w-4 h-4" />
+                <span>Private, Members-Only Community</span>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -74,9 +92,25 @@ export default function CommunityPage() {
                 </div>
               </div>
               
-              <a href="/community/forums" className="block w-full bg-purple-600 hover:bg-purple-700 text-white text-center py-3 rounded-lg font-semibold transition-colors">
-                Browse Forums
-              </a>
+              {status === 'loading' ? (
+                <div className="w-full bg-gray-300 text-gray-500 text-center py-3 rounded-lg font-semibold">
+                  Loading...
+                </div>
+              ) : session ? (
+                <a 
+                  href="https://bipolarpeople.discourse.group/session/sso" 
+                  className="block w-full bg-purple-600 hover:bg-purple-700 text-white text-center py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Enter Forum
+                </a>
+              ) : (
+                <Link 
+                  href="/login?returnUrl=/community"
+                  className="block w-full bg-purple-600 hover:bg-purple-700 text-white text-center py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Login to Access Forum
+                </Link>
+              )}
             </div>
 
             {/* Support Groups */}
@@ -108,9 +142,25 @@ export default function CommunityPage() {
                 </div>
               </div>
               
-              <a href="/community/groups" className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg font-semibold transition-colors">
-                Find Your Group
-              </a>
+              {status === 'loading' ? (
+                <div className="w-full bg-gray-300 text-gray-500 text-center py-3 rounded-lg font-semibold">
+                  Loading...
+                </div>
+              ) : session ? (
+                <a 
+                  href="https://bipolarpeople.discourse.group/session/sso" 
+                  className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Find Your Group
+                </a>
+              ) : (
+                <Link 
+                  href="/login?returnUrl=/community"
+                  className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Login to Access Groups
+                </Link>
+              )}
             </div>
 
             {/* Peer Support */}
@@ -144,14 +194,46 @@ export default function CommunityPage() {
                 </div>
               </div>
               
-              <div className="flex gap-2">
-                <a href="/community/mentor" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-lg font-semibold transition-colors text-sm">
-                  Find Mentor
-                </a>
-                <a href="/community/become-mentor" className="flex-1 border border-blue-600 text-blue-600 hover:bg-blue-50 text-center py-3 rounded-lg font-semibold transition-colors text-sm">
-                  Be Mentor
-                </a>
-              </div>
+              {status === 'loading' ? (
+                <div className="flex gap-2">
+                  <div className="flex-1 bg-gray-300 text-gray-500 text-center py-3 rounded-lg font-semibold text-sm">
+                    Loading...
+                  </div>
+                  <div className="flex-1 bg-gray-100 text-gray-400 text-center py-3 rounded-lg font-semibold text-sm">
+                    Loading...
+                  </div>
+                </div>
+              ) : session ? (
+                <div className="flex gap-2">
+                  <a 
+                    href="https://bipolarpeople.discourse.group/session/sso" 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-lg font-semibold transition-colors text-sm"
+                  >
+                    Find Mentor
+                  </a>
+                  <a 
+                    href="https://bipolarpeople.discourse.group/session/sso" 
+                    className="flex-1 border border-blue-600 text-blue-600 hover:bg-blue-50 text-center py-3 rounded-lg font-semibold transition-colors text-sm"
+                  >
+                    Be Mentor
+                  </a>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Link 
+                    href="/login?returnUrl=/community"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-lg font-semibold transition-colors text-sm"
+                  >
+                    Find Mentor
+                  </Link>
+                  <Link 
+                    href="/login?returnUrl=/community"
+                    className="flex-1 border border-blue-600 text-blue-600 hover:bg-blue-50 text-center py-3 rounded-lg font-semibold transition-colors text-sm"
+                  >
+                    Be Mentor
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
