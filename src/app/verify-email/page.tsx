@@ -21,18 +21,16 @@ function VerifyEmailForm() {
 
     const verifyEmail = async () => {
       try {
-        const response = await fetch('/api/auth/verify-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
+        const response = await fetch(`/api/auth/verify-email?token=${token}`, {
+          method: 'GET',
         });
 
         const data = await response.json();
 
         if (response.ok) {
           setStatus('success');
-          setMessage('Email verified successfully! Redirecting to login...');
-          setTimeout(() => router.push('/login'), 3000);
+          setMessage('Email verified successfully! You can now log in to your account.');
+          setTimeout(() => router.push('/login'), 5000);
         } else {
           setStatus('error');
           setMessage(data.error || 'Verification failed');
@@ -65,7 +63,18 @@ function VerifyEmailForm() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Verified! 🎉</h2>
-            <p className="text-gray-600 mb-4">{message}</p>
+            <p className="text-gray-600 mb-6">{message}</p>
+            <div className="space-y-3">
+              <Link 
+                href="/login" 
+                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors w-full text-center"
+              >
+                Login Now
+              </Link>
+              <p className="text-sm text-gray-500 text-center">
+                You'll be automatically redirected in a few seconds...
+              </p>
+            </div>
           </>
         )}
 
