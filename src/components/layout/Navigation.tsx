@@ -1,5 +1,5 @@
 'use client'
-
+import UserMenu from '@/components/auth/UserMenu';
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -7,7 +7,6 @@ import { Disclosure, Menu, Transition } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon, HeartIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 import { Fragment } from 'react'
-import UserMenu from '@/components/auth/UserMenu'
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -113,7 +112,7 @@ export default function Navigation() {
                   {status === 'loading' ? (
                     <div className="w-8 h-8 bg-gray-100 rounded-full animate-pulse"></div>
                   ) : session ? (
-                    <UserMenu user={session.user} />
+                    <UserMenu />
                   ) : (
                     <Link
                       href="/login"
@@ -132,7 +131,19 @@ export default function Navigation() {
               </div>
 
               {/* Mobile menu button */}
-              <div className="md:hidden">
+              <div className="md:hidden flex items-center gap-2">
+                {status === 'loading' ? (
+                  <div className="w-8 h-8 bg-gray-100 rounded-full animate-pulse"></div>
+                ) : session ? (
+                  <UserMenu />
+                ) : (
+                  <Link
+                    href="/login"
+                    className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                )}
                 <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
                   <span className="sr-only">Open main menu</span>
                   {open ? (

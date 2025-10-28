@@ -1,12 +1,9 @@
-import NextAuth from 'next-auth'
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { PostgresAdapter } from '@auth/pg-adapter'
-import { sql } from '@vercel/postgres'
-import { getUserByEmail, verifyPassword } from './db'
+import { db } from './db'
+import bcrypt from 'bcryptjs'
 
-const authOptions: NextAuthOptions = {
-  adapter: PostgresAdapter(sql),
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -19,26 +16,21 @@ const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await getUserByEmail(credentials.email)
-        if (!user || !user.password) {
+        const user = await db.getUserByEmail(credentials.email)
+        if (!user) {
           return null
         }
 
-        const isValidPassword = await verifyPassword(credentials.password, user.password)
-        if (!isValidPassword) {
+        const isPasswordValid = await bcrypt.compare(credentials.password, user.password_hash)
+        if (!isPasswordValid) {
           return null
-        }
-
-        // Only allow verified users to login
-        if (!user.emailVerified) {
-          throw new Error('Please verify your email before logging in')
         }
 
         return {
-          id: user.id,
+          id: user.id.toString(),
           email: user.email,
-          name: user.name,
-          image: user.image,
+          name: user.display_name || user.username,
+          username: user.username,
         }
       }
     })
@@ -49,32 +41,21 @@ const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.email = user.email
-        token.name = user.name
-        token.image = user.image
+        token.username = user.username
       }
       return token
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string
-        session.user.email = token.email as string
-        session.user.name = token.name as string
-        session.user.image = token.image as string
+        session.user.id = token.sub
+        session.user.username = token.username
       }
       return session
-    },
+    }
   },
   pages: {
     signIn: '/login',
     signUp: '/register',
-    error: '/login',
   },
   secret: process.env.AUTH_SECRET,
 }
-
-const handler = NextAuth(authOptions)
-
-export { handler as GET, handler as POST }
-export { authOptions }

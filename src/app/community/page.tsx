@@ -1,15 +1,9 @@
 // app/community/page.tsx
 'use client'
 
-import { Metadata } from 'next'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { LockClosedIcon, UserGroupIcon } from '@heroicons/react/24/outline'
-
-export const metadata: Metadata = {
-  title: 'Community - Bipolar People',
-  description: 'Connect with others who understand your bipolar journey in a safe, supportive environment.',
-}
 
 export default function CommunityPage() {
   const { data: session, status } = useSession()

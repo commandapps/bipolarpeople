@@ -1,117 +1,116 @@
-'use client'
+'use client';
 
-import { Fragment } from 'react'
-import { Menu, Transition } from '@headlessui/react'
-import { signOut } from 'next-auth/react'
-import { UserIcon, ChevronDownIcon, ArrowRightOnRectangleIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
-import Link from 'next/link'
-import clsx from 'clsx'
+import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
+import { useState, useRef, useEffect } from 'react';
 
-interface UserMenuProps {
-  user: {
-    name?: string | null
-    email?: string | null
-    image?: string | null
+export default function UserMenu() {
+  const { data: session, status } = useSession();
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  if (status === 'loading') {
+    return (
+      <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+    );
   }
-}
 
-export default function UserMenu({ user }: UserMenuProps) {
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/' })
-  }
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'U'
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
+  if (!session) {
+    return (
+      <div className="flex items-center gap-3">
+        <Link
+          href="/login"
+          className="text-gray-700 hover:text-blue-600 font-medium text-sm transition-colors"
+        >
+          Log In
+        </Link>
+        <Link
+          href="/register"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        >
+          Sign Up
+        </Link>
+      </div>
+    );
   }
 
   return (
-    <Menu as="div" className="relative">
-      <Menu.Button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
-        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-          {user.image ? (
-            <img
-              src={user.image}
-              alt={user.name || 'User'}
-              className="w-8 h-8 rounded-full object-cover"
-            />
-          ) : (
-            <span className="text-blue-600 font-semibold text-sm">
-              {getInitials(user.name)}
-            </span>
-          )}
-        </div>
-        <span className="hidden md:block">{user.name || 'User'}</span>
-        <ChevronDownIcon className="h-4 w-4" />
-      </Menu.Button>
-
-      <Transition
-        as={Fragment}
-        enter="transition ease-out duration-100"
-        enterFrom="transform opacity-0 scale-95"
-        enterTo="transform opacity-100 scale-100"
-        leave="transition ease-in duration-75"
-        leaveFrom="transform opacity-100 scale-100"
-        leaveTo="transform opacity-0 scale-95"
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors"
       >
-        <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          <div className="py-1">
-            <Menu.Item>
-              {({ active }) => (
-                <Link
-                  href="/profile"
-                  className={clsx(
-                    active ? 'bg-gray-100' : '',
-                    'flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:text-blue-600'
-                  )}
-                >
-                  <UserIcon className="h-4 w-4" />
-                  My Profile
-                </Link>
-              )}
-            </Menu.Item>
-            
-            <Menu.Item>
-              {({ active }) => (
-                <a
-                  href={`${process.env.NEXT_PUBLIC_DISCOURSE_URL || 'https://bipolarpeople.discourse.group'}/session/sso`}
-                  className={clsx(
-                    active ? 'bg-gray-100' : '',
-                    'flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:text-blue-600'
-                  )}
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  Community Forum
-                </a>
-              )}
-            </Menu.Item>
+        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+          {session.user?.name?.[0]?.toUpperCase() || 'U'}
+        </div>
+        <span className="hidden md:block text-sm font-medium text-gray-700">
+          {session.user?.name}
+        </span>
+        <svg 
+          className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
 
-            <div className="border-t border-gray-100 my-1"></div>
-
-            <Menu.Item>
-              {({ active }) => (
-                <button
-                  onClick={handleSignOut}
-                  className={clsx(
-                    active ? 'bg-gray-100' : '',
-                    'flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:text-red-600 w-full text-left'
-                  )}
-                >
-                  <ArrowRightOnRectangleIcon className="h-4 w-4" />
-                  Sign Out
-                </button>
-              )}
-            </Menu.Item>
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <p className="text-sm font-medium text-gray-900">{session.user?.name}</p>
+            <p className="text-xs text-gray-500 truncate">{session.user?.email}</p>
           </div>
-        </Menu.Items>
-      </Transition>
-    </Menu>
-  )
+          
+          <Link
+            href="/profile"
+            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            My Profile
+          </Link>
+
+          <a
+            href={`${process.env.NEXT_PUBLIC_DISCOURSE_URL || 'https://bipolarpeople.discourse.group'}/session/sso`}
+            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Community Forum
+          </a>
+
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              signOut({ callbackUrl: '/' });
+            }}
+            className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Log Out
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }

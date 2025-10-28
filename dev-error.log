@@ -1,0 +1,47 @@
+
+> bipolarpeople@0.1.1 dev
+> next dev --turbopack
+
+ ⚠ Port 3000 is in use by process 55586, using available port 3001 instead.
+   ▲ Next.js 15.5.3 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.1.118:3001
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 886ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1425ms
+ GET / 200 in 1793ms
+ GET / 200 in 108ms
+ ✓ Compiled /api/auth/[...nextauth] in 332ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 517ms
+TypeError: handler is not a function
+    at GET (src/app/api/auth/[...nextauth]/route.ts:9:10)
+   7 | export async function GET(request: NextRequest) {
+   8 |   // @ts-expect-error - NextAuth v5 beta compatibility issue
+>  9 |   return handler(request)
+     |          ^
+  10 | }
+  11 |
+  12 | export async function POST(request: NextRequest) {
+ GET /api/auth/session 500 in 1134ms
+TypeError: handler is not a function
+    at GET (src/app/api/auth/[...nextauth]/route.ts:9:10)
+   7 | export async function GET(request: NextRequest) {
+   8 |   // @ts-expect-error - NextAuth v5 beta compatibility issue
+>  9 |   return handler(request)
+     |          ^
+  10 | }
+  11 |
+  12 | export async function POST(request: NextRequest) {
+ GET /api/auth/session 500 in 267ms
+ ✓ Compiled /login in 186ms
+ GET /login 200 in 213ms
+ ✓ Compiled /register in 219ms
+ GET /register 200 in 251ms
+ ✓ Compiled /api/auth/register in 188ms
+ POST /api/auth/register 200 in 1926ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 234ms
+ GET /login 200 in 44ms
+ GET /register 200 in 252ms

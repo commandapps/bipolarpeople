@@ -1,74 +1,64 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createUser, emailExists } from '@/lib/db'
-import { createVerificationToken } from '@/lib/db'
-import { sendVerificationEmail } from '@/lib/email'
-import { randomBytes } from 'crypto'
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { db } from '@/lib/db';
+import { sendVerificationEmail } from '@/lib/email';
+import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, confirmPassword, displayName } = await request.json()
+    const { email, username, password } = await request.json();
 
     // Validation
-    if (!name || !email || !password || !confirmPassword) {
+    if (!email || !username || !password) {
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
-      )
-    }
-
-    if (password !== confirmPassword) {
-      return NextResponse.json(
-        { error: 'Passwords do not match' },
-        { status: 400 }
-      )
+      );
     }
 
     if (password.length < 8) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
+        { error: 'Password must be at least 8 characters' },
         { status: 400 }
-      )
+      );
     }
 
-    // Check if email already exists
-    if (await emailExists(email)) {
+    // Check if user exists
+    const existingUser = await db.getUserByEmail(email);
+    if (existingUser) {
       return NextResponse.json(
-        { error: 'An account with this email already exists' },
+        { error: 'Email already registered' },
         { status: 400 }
-      )
+      );
     }
+
+    // Hash password
+    const password_hash = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = await createUser({
-      name,
+    const user = await db.createUser({
       email,
-      password,
-      displayName: displayName || null
-    })
+      username,
+      password_hash,
+      display_name: username,
+    });
 
     // Generate verification token
-    const token = randomBytes(32).toString('hex')
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-
-    await createVerificationToken({
-      identifier: email,
-      token,
-      expires
-    })
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    await db.createVerificationToken(user.id, verificationToken);
 
     // Send verification email
-    await sendVerificationEmail(email, token, name)
+    await sendVerificationEmail(email, verificationToken);
 
     return NextResponse.json({
+      success: true,
       message: 'Registration successful. Please check your email to verify your account.',
-      userId: user.id
-    })
-
-  } catch (error) {
-    console.error('Registration error:', error)
+    });
+    } catch (error: unknown) {
+    console.error('Registration error:', error);
     return NextResponse.json(
       { error: 'Registration failed. Please try again.' },
       { status: 500 }
-    )
+    );
   }
 }
