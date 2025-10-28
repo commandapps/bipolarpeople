@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function VerificationSuccessPage() {
+function VerificationSuccessContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [email, setEmail] = useState('');
 
   useEffect(() => {
@@ -72,5 +71,13 @@ export default function VerificationSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerificationSuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerificationSuccessContent />
+    </Suspense>
   );
 }
