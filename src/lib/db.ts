@@ -64,6 +64,14 @@ export const db = {
     return result.rows[0] as User;
   },
 
+  async updateUserPassword(id: number, hashedPassword: string): Promise<void> {
+    await sql`
+      UPDATE users 
+      SET password_hash = ${hashedPassword}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+    `;
+  },
+
   // Token operations
   async createVerificationToken(userId: number, token: string): Promise<void> {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours

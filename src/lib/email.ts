@@ -29,7 +29,7 @@ export async function sendVerificationEmail(email: string, token: string) {
   }
 }
 
-export async function sendPasswordResetEmail(email: string, token: string) {
+export async function sendPasswordResetEmail(email: string, token: string, name: string = 'there') {
   const resend = new Resend(process.env.RESEND_API_KEY)
   const resetUrl = `${process.env.AUTH_URL || 'http://localhost:3004'}/reset-password?token=${token}`
   
@@ -56,5 +56,30 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   } catch (error) {
     console.error('Failed to send password reset email:', error)
     throw new Error('Failed to send password reset email')
+  }
+}
+
+export async function sendPasswordChangedEmail(email: string, name: string = 'there') {
+  const resend = new Resend(process.env.RESEND_API_KEY)
+  
+  try {
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@bipolarpeople.com',
+      to: email,
+      subject: 'Password changed - Bipolar People',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #2563eb;">Password Changed Successfully</h1>
+          <p>Hi ${name},</p>
+          <p>Your password has been successfully changed for your Bipolar People account.</p>
+          <p>If you didn't make this change, please contact our support team immediately.</p>
+          <p>For security reasons, you may need to log in again on all your devices.</p>
+          <p>Best regards,<br>The Bipolar People Team</p>
+        </div>
+      `,
+    })
+  } catch (error) {
+    console.error('Failed to send password changed email:', error)
+    throw new Error('Failed to send password changed email')
   }
 }
