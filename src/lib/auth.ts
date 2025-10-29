@@ -27,6 +27,11 @@ export const authOptions = {
           return null
         }
 
+        // Require email verification before allowing login
+        if (!user.email_verified) {
+          throw new Error('Please verify your email before logging in')
+        }
+
         return {
           id: user.id.toString(),
           email: user.email,
