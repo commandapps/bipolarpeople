@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeftIcon, HeartIcon, UserIcon, CalendarIcon, SunIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, HeartIcon, CalendarIcon, SunIcon } from '@heroicons/react/24/outline'
 
 export default function RecoveryHopePage() {
   const stories = [

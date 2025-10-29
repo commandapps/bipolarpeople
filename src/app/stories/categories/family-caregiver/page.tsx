@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeftIcon, HeartIcon, UserIcon, CalendarIcon, HomeIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, HeartIcon, CalendarIcon, HomeIcon } from '@heroicons/react/24/outline'
 
 export default function FamilyCaregiverPage() {
   const stories = [

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeftIcon, HeartIcon, UserIcon, CalendarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, HeartIcon, CalendarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
 export default function ManagingEpisodesPage() {
   const stories = [
