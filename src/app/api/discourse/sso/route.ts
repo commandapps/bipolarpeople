@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { validateSSORequest, generateSSOUrl, createDiscourseUser } from '@/lib/discourse-sso'
 
 export async function GET(request: NextRequest) {
   try {
     // Check if user is authenticated
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     if (!session?.user) {
       // Redirect to login with return URL
       const returnUrl = request.url
@@ -43,12 +44,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Create Discourse user object
+    const user = session.user as any
     const discourseUser = createDiscourseUser({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email!,
-      username: session.user.username || '',
-      image: session.user.image,
+      id: user.id,
+      name: user.name,
+      email: user.email!,
+      username: user.username || '',
+      image: user.image,
     })
 
     // Generate SSO URL for Discourse

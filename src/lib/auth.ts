@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import NextAuth from 'next-auth'
+import NextAuth, { type NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from './db'
 import bcrypt from 'bcryptjs'
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -61,7 +61,6 @@ export const authOptions = {
   },
   pages: {
     signIn: '/login',
-    signUp: '/register',
   },
   secret: process.env.AUTH_SECRET,
 }
@@ -69,10 +68,3 @@ export const authOptions = {
 const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }
-
-// For API routes - call auth function with proper type
-export async function getServerSession() {
-  // In NextAuth v5 beta, we need to create a mock request
-  // This is a workaround for the beta version
-  return {} as any
-}
