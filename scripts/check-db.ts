@@ -1,0 +1,29 @@
+import { sql } from '@vercel/postgres'
+
+async function checkDatabase() {
+  try {
+    console.log('Checking database tables...\n')
+
+    const tables = [
+      'mood_entries',
+      'medications',
+      'medication_logs',
+      'journal_entries',
+      'episode_plans',
+    ]
+
+    for (const table of tables) {
+      const result = await sql.query(
+        `SELECT COUNT(*) FROM ${table}`
+      )
+      console.log(`✓ ${table}: ${result.rows[0].count} rows`)
+    }
+
+    console.log('\n✅ All tables exist!')
+
+  } catch (error) {
+    console.error('❌ Database check failed:', error)
+  }
+}
+
+checkDatabase()
