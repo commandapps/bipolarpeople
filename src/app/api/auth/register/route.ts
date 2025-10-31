@@ -47,8 +47,13 @@ export async function POST(request: NextRequest) {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     await db.createVerificationToken(user.id, verificationToken);
 
-    // Send verification email
-    await sendVerificationEmail(email, verificationToken);
+    // Send verification email (non-blocking - don't fail registration if email fails)
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailError) {
+      // Log but don't fail registration
+      console.error('Email sending failed (but user was created):', emailError);
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,36 +1,32 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { 
   ChartBarIcon, 
   HeartIcon,
   ClockIcon,
   DocumentArrowDownIcon,
   PlusIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline'
-
-interface MoodEntry {
-  id: string
-  date: string
-  mood: number
-  energy: number
-  anxiety: number
-  sleep: number
-  notes: string
-  activities: string[]
-  symptoms: string[]
-}
+import { useMoodTracker } from '@/hooks/useMoodTracker'
 
 const moodOptions = [
-  { value: 1, label: 'Very Low', color: 'bg-red-600', description: 'Severe depression, hopeless' },
-  { value: 2, label: 'Low', color: 'bg-red-400', description: 'Depressed, sad' },
-  { value: 3, label: 'Slightly Low', color: 'bg-orange-400', description: 'Below normal, down' },
-  { value: 4, label: 'Neutral', color: 'bg-gray-400', description: 'Balanced, stable' },
-  { value: 5, label: 'Slightly High', color: 'bg-yellow-400', description: 'Above normal, good' },
-  { value: 6, label: 'High', color: 'bg-green-400', description: 'Elevated, very good' },
-  { value: 7, label: 'Very High', color: 'bg-blue-500', description: 'Manic, extremely elevated' }
+  { value: -5, label: 'Severely Depressed', color: 'bg-red-900', description: 'Hopeless, can\'t function' },
+  { value: -4, label: 'Very Depressed', color: 'bg-red-700', description: 'Extremely low, struggling' },
+  { value: -3, label: 'Depressed', color: 'bg-red-500', description: 'Sad, unmotivated' },
+  { value: -2, label: 'Low', color: 'bg-orange-500', description: 'Below normal, down' },
+  { value: -1, label: 'Slightly Low', color: 'bg-orange-300', description: 'A bit down' },
+  { value: 0, label: 'Neutral', color: 'bg-gray-400', description: 'Balanced, stable' },
+  { value: 1, label: 'Slightly High', color: 'bg-yellow-400', description: 'A bit elevated' },
+  { value: 2, label: 'Good', color: 'bg-green-400', description: 'Happy, motivated' },
+  { value: 3, label: 'Very Good', color: 'bg-green-500', description: 'Great mood, energetic' },
+  { value: 4, label: 'Elevated', color: 'bg-blue-500', description: 'Very energetic, talkative' },
+  { value: 5, label: 'Manic', color: 'bg-purple-600', description: 'Extremely elevated, racing thoughts' }
 ]
 
 const commonActivities = [
@@ -44,418 +40,445 @@ const commonSymptoms = [
 ]
 
 export default function MoodTrackerPage() {
-  const [currentEntry, setCurrentEntry] = useState<Partial<MoodEntry>>({
-    mood: 4,
-    energy: 4,
-    anxiety: 3,
-    sleep: 7,
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const { entries, loading, error, saving, createEntry, deleteEntry } = useMoodTracker()
+  
+  const [currentEntry, setCurrentEntry] = useState({
+    mood_score: 0,
+    energy_level: 5,
+    anxiety_level: 3,
+    sleep_hours: 7,
+    sleep_quality: 3,
     notes: '',
-    activities: [],
-    symptoms: []
+    activities: [] as string[],
+    symptoms: [] as string[]
   })
   
-  const [entries, setEntries] = useState<MoodEntry[]>([])
   const [showingHistory, setShowingHistory] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
-  // Load entries from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('bipolar-mood-entries')
-    if (saved) {
-      setEntries(JSON.parse(saved))
-    }
-  }, [])
+  // Redirect if not authenticated
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
-  // Save entries to localStorage whenever entries change
-  useEffect(() => {
-    localStorage.setItem('bipolar-mood-entries', JSON.stringify(entries))
-  }, [entries])
+  if (status === 'unauthenticated') {
+    router.push('/login?callbackUrl=/tools/mood-tracker')
+    return null
+  }
 
-  const handleSaveEntry = () => {
-    if (currentEntry.mood === undefined) return
+  const handleSaveEntry = async () => {
+    if (currentEntry.mood_score === undefined) return
 
-    const newEntry: MoodEntry = {
-      id: Date.now().toString(),
-      date: new Date().toISOString().split('T')[0],
-      mood: currentEntry.mood,
-      energy: currentEntry.energy || 4,
-      anxiety: currentEntry.anxiety || 3,
-      sleep: currentEntry.sleep || 7,
-      notes: currentEntry.notes || '',
-      activities: currentEntry.activities || [],
-      symptoms: currentEntry.symptoms || []
-    }
-
-    setEntries(prev => [newEntry, ...prev])
-    
-    // Reset form
-    setCurrentEntry({
-      mood: 4,
-      energy: 4,
-      anxiety: 3,
-      sleep: 7,
-      notes: '',
-      activities: [],
-      symptoms: []
+    const success = await createEntry({
+      ...currentEntry,
+      entry_date: new Date().toISOString().split('T')[0],
+      entry_time: new Date().toTimeString().split(' ')[0]
     })
 
-    alert('Mood entry saved!')
+    if (success) {
+      // Reset form
+      setCurrentEntry({
+        mood_score: 0,
+        energy_level: 5,
+        anxiety_level: 3,
+        sleep_hours: 7,
+        sleep_quality: 3,
+        notes: '',
+        activities: [],
+        symptoms: []
+      })
+      
+      // Show success message
+      setSuccessMessage('Mood entry saved successfully!')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    }
+  }
+
+  const handleDeleteEntry = async (id: number) => {
+    if (confirm('Are you sure you want to delete this entry?')) {
+      await deleteEntry(id)
+    }
   }
 
   const toggleActivity = (activity: string) => {
     setCurrentEntry(prev => ({
       ...prev,
-      activities: prev.activities?.includes(activity) 
+      activities: prev.activities.includes(activity)
         ? prev.activities.filter(a => a !== activity)
-        : [...(prev.activities || []), activity]
+        : [...prev.activities, activity]
     }))
   }
 
   const toggleSymptom = (symptom: string) => {
     setCurrentEntry(prev => ({
       ...prev,
-      symptoms: prev.symptoms?.includes(symptom) 
+      symptoms: prev.symptoms.includes(symptom)
         ? prev.symptoms.filter(s => s !== symptom)
-        : [...(prev.symptoms || []), symptom]
+        : [...prev.symptoms, symptom]
     }))
   }
 
-  const exportData = () => {
-    const dataStr = JSON.stringify(entries, null, 2)
-    const dataBlob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `mood-tracker-data-${new Date().toISOString().split('T')[0]}.json`
-    link.click()
-    URL.revokeObjectURL(url)
+  const getMoodColor = (score: number) => {
+    const mood = moodOptions.find(m => m.value === score)
+    return mood?.color || 'bg-gray-400'
   }
 
-  if (showingHistory) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <button
-              onClick={() => setShowingHistory(false)}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-            >
-              <ArrowLeftIcon className="h-5 w-5" />
-              Back to Tracker
-            </button>
-            <button
-              onClick={exportData}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <DocumentArrowDownIcon className="h-5 w-5" />
-              Export Data
-            </button>
-          </div>
-
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Mood History</h1>
-
-          {entries.length === 0 ? (
-            <div className="text-center py-12">
-              <ChartBarIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No mood entries yet</p>
-              <p className="text-gray-500">Start tracking to see your patterns over time</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {entries.map((entry) => (
-                <div key={entry.id} className="bg-white rounded-lg p-6 shadow-sm border">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">
-                      {new Date(entry.date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long', 
-                        day: 'numeric'
-                      })}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full ${moodOptions[entry.mood - 1]?.color}`}></div>
-                      <span className="text-sm text-gray-600">
-                        {moodOptions[entry.mood - 1]?.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">Mood</span>
-                      <div className="text-lg font-bold text-gray-900">{entry.mood}/7</div>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">Energy</span>
-                      <div className="text-lg font-bold text-gray-900">{entry.energy}/7</div>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">Anxiety</span>
-                      <div className="text-lg font-bold text-gray-900">{entry.anxiety}/7</div>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">Sleep (hrs)</span>
-                      <div className="text-lg font-bold text-gray-900">{entry.sleep}h</div>
-                    </div>
-                  </div>
-
-                  {entry.activities.length > 0 && (
-                    <div className="mb-3">
-                      <span className="text-sm font-medium text-gray-700 block mb-2">Activities</span>
-                      <div className="flex flex-wrap gap-2">
-                        {entry.activities.map((activity) => (
-                          <span key={activity} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                            {activity}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {entry.symptoms.length > 0 && (
-                    <div className="mb-3">
-                      <span className="text-sm font-medium text-gray-700 block mb-2">Symptoms</span>
-                      <div className="flex flex-wrap gap-2">
-                        {entry.symptoms.map((symptom) => (
-                          <span key={symptom} className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
-                            {symptom}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {entry.notes && (
-                    <div>
-                      <span className="text-sm font-medium text-gray-700 block mb-2">Notes</span>
-                      <p className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg">{entry.notes}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    )
+  const getMoodLabel = (score: number) => {
+    const mood = moodOptions.find(m => m.value === score)
+    return mood?.label || 'Unknown'
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Link 
+            href="/tools"
+            className="inline-flex items-center text-purple-600 hover:text-purple-700 mb-4"
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            Back to Tools
+          </Link>
+          
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Daily Mood Tracker</h1>
-              <p className="text-gray-600 mt-1">Track your mood, energy, and patterns over time</p>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                <HeartIcon className="h-8 w-8 mr-3 text-purple-600" />
+                Mood Tracker
+              </h1>
+              <p className="mt-2 text-gray-600">
+                Track your daily mood, energy, and symptoms
+              </p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowingHistory(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <ChartBarIcon className="h-5 w-5" />
-                View History
-              </button>
-            </div>
+            
+            <button
+              onClick={() => setShowingHistory(!showingHistory)}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center"
+            >
+              <ClockIcon className="h-5 w-5 mr-2" />
+              {showingHistory ? 'New Entry' : 'View History'}
+            </button>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Today's Entry Form */}
-        <div className="bg-white rounded-xl shadow-sm border p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Today's Check-in</h2>
-
-          {/* Mood Scale */}
-          <div className="mb-8">
-            <label className="block text-lg font-semibold text-gray-700 mb-4">
-              How is your mood today?
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-              {moodOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setCurrentEntry(prev => ({ ...prev, mood: option.value }))}
-                  className={`p-4 rounded-lg border-2 transition-all text-center ${
-                    currentEntry.mood === option.value
-                      ? 'border-gray-800 shadow-lg'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-full ${option.color} mx-auto mb-2`}></div>
-                  <div className="font-semibold text-sm">{option.label}</div>
-                  <div className="text-xs text-gray-600 mt-1">{option.description}</div>
-                </button>
-              ))}
-            </div>
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-800 text-center font-medium">{successMessage}</p>
           </div>
+        )}
 
-          {/* Quick Metrics */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Energy Level (1-7)
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800 text-center">{error}</p>
+          </div>
+        )}
+
+        {!showingHistory ? (
+          /* NEW ENTRY FORM */
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">How are you feeling today?</h2>
+            
+            {/* Mood Scale */}
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Overall Mood
+              </label>
+              <div className="space-y-2">
+                {moodOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setCurrentEntry(prev => ({ ...prev, mood_score: option.value }))}
+                    className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                      currentEntry.mood_score === option.value
+                        ? 'border-purple-600 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <div className={`w-4 h-4 rounded-full ${option.color} mr-3`}></div>
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{option.label}</div>
+                        <div className="text-sm text-gray-500">{option.description}</div>
+                      </div>
+                      {currentEntry.mood_score === option.value && (
+                        <div className="text-purple-600 font-medium">Selected</div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Energy Level */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Energy Level: {currentEntry.energy_level}/10
               </label>
               <input
                 type="range"
                 min="1"
-                max="7"
-                value={currentEntry.energy || 4}
-                onChange={(e) => setCurrentEntry(prev => ({ ...prev, energy: Number(e.target.value) }))}
+                max="10"
+                value={currentEntry.energy_level}
+                onChange={(e) => setCurrentEntry(prev => ({ ...prev, energy_level: parseInt(e.target.value) }))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               />
-              <div className="flex justify-between text-xs text-gray-600 mt-1">
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
                 <span>Very Low</span>
-                <span className="font-semibold">{currentEntry.energy || 4}</span>
                 <span>Very High</span>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Anxiety Level (1-7)
+            {/* Anxiety Level */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Anxiety Level: {currentEntry.anxiety_level}/10
               </label>
               <input
                 type="range"
                 min="1"
-                max="7"
-                value={currentEntry.anxiety || 3}
-                onChange={(e) => setCurrentEntry(prev => ({ ...prev, anxiety: Number(e.target.value) }))}
+                max="10"
+                value={currentEntry.anxiety_level}
+                onChange={(e) => setCurrentEntry(prev => ({ ...prev, anxiety_level: parseInt(e.target.value) }))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               />
-              <div className="flex justify-between text-xs text-gray-600 mt-1">
-                <span>Very Low</span>
-                <span className="font-semibold">{currentEntry.anxiety || 3}</span>
-                <span>Very High</span>
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>None</span>
+                <span>Severe</span>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Hours Slept
+            {/* Sleep */}
+            <div className="mb-6 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hours Slept
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  step="0.5"
+                  value={currentEntry.sleep_hours}
+                  onChange={(e) => setCurrentEntry(prev => ({ ...prev, sleep_hours: parseFloat(e.target.value) }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sleep Quality (1-5)
+                </label>
+                <select
+                  value={currentEntry.sleep_quality}
+                  onChange={(e) => setCurrentEntry(prev => ({ ...prev, sleep_quality: parseInt(e.target.value) }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value={1}>1 - Very Poor</option>
+                  <option value={2}>2 - Poor</option>
+                  <option value={3}>3 - Fair</option>
+                  <option value={4}>4 - Good</option>
+                  <option value={5}>5 - Excellent</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Activities */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Activities Today
               </label>
-              <input
-                type="range"
-                min="0"
-                max="14"
-                value={currentEntry.sleep || 7}
-                onChange={(e) => setCurrentEntry(prev => ({ ...prev, sleep: Number(e.target.value) }))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-gray-600 mt-1">
-                <span>0h</span>
-                <span className="font-semibold">{currentEntry.sleep || 7}h</span>
-                <span>14h</span>
+              <div className="flex flex-wrap gap-2">
+                {commonActivities.map((activity) => (
+                  <button
+                    key={activity}
+                    onClick={() => toggleActivity(activity)}
+                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                      currentEntry.activities.includes(activity)
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {activity}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Activities */}
-          <div className="mb-8">
-            <label className="block text-lg font-semibold text-gray-700 mb-4">
-              Activities Today
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {commonActivities.map((activity) => (
-                <button
-                  key={activity}
-                  onClick={() => toggleActivity(activity)}
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                    currentEntry.activities?.includes(activity)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {activity}
-                </button>
-              ))}
+            {/* Symptoms */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Symptoms Experienced
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {commonSymptoms.map((symptom) => (
+                  <button
+                    key={symptom}
+                    onClick={() => toggleSymptom(symptom)}
+                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                      currentEntry.symptoms.includes(symptom)
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {symptom}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Symptoms */}
-          <div className="mb-8">
-            <label className="block text-lg font-semibold text-gray-700 mb-4">
-              Symptoms (if any)
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {commonSymptoms.map((symptom) => (
-                <button
-                  key={symptom}
-                  onClick={() => toggleSymptom(symptom)}
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                    currentEntry.symptoms?.includes(symptom)
-                      ? 'bg-red-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {symptom}
-                </button>
-              ))}
+            {/* Notes */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notes (Optional)
+              </label>
+              <textarea
+                value={currentEntry.notes}
+                onChange={(e) => setCurrentEntry(prev => ({ ...prev, notes: e.target.value }))}
+                rows={4}
+                placeholder="Any additional thoughts, events, or observations..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
             </div>
+
+            {/* Save Button */}
+            <button
+              onClick={handleSaveEntry}
+              disabled={saving}
+              className="w-full py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  Save Mood Entry
+                </>
+              )}
+            </button>
           </div>
+        ) : (
+          /* HISTORY VIEW */
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Mood History</h2>
+            
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading entries...</p>
+              </div>
+            ) : entries.length === 0 ? (
+              <div className="text-center py-12">
+                <HeartIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-600">No mood entries yet. Start tracking today!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {entries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          <div className={`w-3 h-3 rounded-full ${getMoodColor(entry.mood_score)} mr-2`}></div>
+                          <span className="font-medium text-gray-900">
+                            {getMoodLabel(entry.mood_score)}
+                          </span>
+                          <span className="text-gray-400 mx-2">•</span>
+                          <span className="text-sm text-gray-500">
+                            {new Date(entry.entry_date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4 text-sm mb-3">
+                          <div>
+                            <span className="text-gray-500">Energy:</span>
+                            <span className="ml-1 font-medium">{entry.energy_level}/10</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Anxiety:</span>
+                            <span className="ml-1 font-medium">{entry.anxiety_level}/10</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Sleep:</span>
+                            <span className="ml-1 font-medium">{entry.sleep_hours}h</span>
+                          </div>
+                        </div>
 
-          {/* Notes */}
-          <div className="mb-8">
-            <label className="block text-lg font-semibold text-gray-700 mb-3">
-              Additional Notes (optional)
-            </label>
-            <textarea
-              value={currentEntry.notes || ''}
-              onChange={(e) => setCurrentEntry(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="How are you feeling? Any significant events or thoughts today?"
-              className="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              rows={4}
-            />
+                        {entry.activities && entry.activities.length > 0 && (
+                          <div className="mb-2">
+                            <span className="text-xs text-gray-500 block mb-1">Activities:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {entry.activities.map((activity, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                  {activity}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {entry.symptoms && entry.symptoms.length > 0 && (
+                          <div className="mb-2">
+                            <span className="text-xs text-gray-500 block mb-1">Symptoms:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {entry.symptoms.map((symptom, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">
+                                  {symptom}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {entry.notes && (
+                          <p className="text-sm text-gray-600 mt-2 italic">"{entry.notes}"</p>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteEntry(entry.id)}
+                        className="ml-4 text-red-600 hover:text-red-700 p-2"
+                        title="Delete entry"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+        )}
 
-          {/* Save Button */}
-          <button
-            onClick={handleSaveEntry}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2"
-          >
-            <PlusIcon className="h-6 w-6" />
-            Save Today's Entry
-          </button>
-        </div>
-
-        {/* Information Cards */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-            <HeartIcon className="h-8 w-8 text-blue-600 mb-4" />
-            <h3 className="text-lg font-bold text-blue-900 mb-2">Why Track Your Mood?</h3>
-            <ul className="text-blue-800 text-sm space-y-1">
-              <li>• Identify patterns and triggers</li>
-              <li>• Share valuable data with your healthcare team</li>
-              <li>• Track medication effectiveness</li>
-              <li>• Recognize early warning signs</li>
-              <li>• Build self-awareness and coping strategies</li>
-            </ul>
-          </div>
-
-          <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-            <ClockIcon className="h-8 w-8 text-green-600 mb-4" />
-            <h3 className="text-lg font-bold text-green-900 mb-2">Privacy & Data</h3>
-            <ul className="text-green-800 text-sm space-y-1">
-              <li>• All data stored locally on your device</li>
-              <li>• Nothing shared without your permission</li>
-              <li>• Export feature for healthcare providers</li>
-              <li>• Delete entries anytime</li>
-              <li>• No account required</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Disclaimer */}
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800 text-sm">
-            <strong>Important:</strong> This mood tracker is for personal monitoring only and is not a substitute 
-            for professional medical advice. If you're experiencing crisis symptoms, please contact the 
-            <Link href="/crisis-resources" className="text-yellow-900 underline font-semibold ml-1">
-              crisis resources
-            </Link> immediately.
-          </p>
+        {/* Info Card */}
+        <div className="mt-8 bg-purple-50 rounded-lg p-6 border border-purple-100">
+          <h3 className="font-semibold text-purple-900 mb-2">💡 Tips for Tracking</h3>
+          <ul className="text-sm text-purple-800 space-y-1">
+            <li>• Track at the same time each day for consistency</li>
+            <li>• Be honest about your mood - this data is private and helps you identify patterns</li>
+            <li>• Note any major life events or changes in your notes</li>
+            <li>• Share your mood charts with your therapist or psychiatrist</li>
+          </ul>
         </div>
       </div>
     </div>

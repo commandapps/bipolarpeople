@@ -1,12 +1,21 @@
 import { Resend } from 'resend'
 
 export async function sendVerificationEmail(email: string, token: string) {
+  if (!process.env.RESEND_API_KEY) {
+    console.error('⚠️  RESEND_API_KEY is not set. Email will not be sent.')
+    console.error('   You can manually verify the email or set up Resend API key.')
+    // Don't throw error - allow registration to succeed even if email fails
+    return
+  }
+
   const resend = new Resend(process.env.RESEND_API_KEY)
-  const verificationUrl = `${process.env.AUTH_URL || 'http://localhost:3004'}/verify-email?token=${token}`
+  const authUrl = process.env.AUTH_URL || 'http://localhost:3000'
+  const verificationUrl = `${authUrl}/verify-email?token=${token}`
   
   try {
+    const emailFrom = process.env.EMAIL_FROM || 'noreply@bipolarpeople.com'
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'noreply@bipolarpeople.com',
+      from: emailFrom,
       to: email,
       subject: 'Verify your email address - Bipolar People',
       html: `
@@ -23,15 +32,28 @@ export async function sendVerificationEmail(email: string, token: string) {
         </div>
       `,
     })
-  } catch (error) {
-    console.error('Failed to send verification email:', error)
-    throw new Error('Failed to send verification email')
+  } catch (error: any) {
+    console.error('❌ Failed to send verification email:', error.message || error)
+    // Log more details if available
+    if (error.response) {
+      console.error('Resend API response:', error.response)
+    }
+    // Don't throw - allow registration to succeed even if email fails
+    // The user can manually verify or we can send email later
+    console.error('⚠️  Registration succeeded but email was not sent.')
+    console.error('   You can manually verify the email using the verification token.')
   }
 }
 
 export async function sendPasswordResetEmail(email: string, token: string, name: string = 'there') {
+  if (!process.env.RESEND_API_KEY) {
+    console.error('⚠️  RESEND_API_KEY is not set. Email will not be sent.')
+    return
+  }
+
   const resend = new Resend(process.env.RESEND_API_KEY)
-  const resetUrl = `${process.env.AUTH_URL || 'http://localhost:3004'}/reset-password?token=${token}`
+  const authUrl = process.env.AUTH_URL || 'http://localhost:3000'
+  const resetUrl = `${authUrl}/reset-password?token=${token}`
   
   try {
     await resend.emails.send({

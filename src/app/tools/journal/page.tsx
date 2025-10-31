@@ -1,382 +1,844 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { 
-  DocumentTextIcon,
-  ArrowLeftIcon,
-  PrinterIcon,
-  DocumentArrowDownIcon,
-  QuestionMarkCircleIcon,
-  ExclamationTriangleIcon,
-  HeartIcon
+  PencilSquareIcon, 
+  TrashIcon, 
+  BookmarkIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  PlusIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
+import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid'
 
 interface JournalEntry {
-  templateName: string
-  date: string
-  responses: Record<string, string>
+  id: number
+  title: string | null
+  content: string
+  mood_at_time: string | null
+  mood_score: number | null
+  location: string | null
+  weather: string | null
+  tags: string[]
+  category: string
+  is_private: boolean
+  is_favorite: boolean
+  episode_type: string | null
+  episode_severity: number | null
+  entry_date: string
+  entry_time: string
+  created_at: string
+  updated_at: string
 }
 
-const journalTemplates = [
-  {
-    id: 'daily-checkin',
-    name: 'Daily Check-in',
-    description: 'Quick daily reflection to track patterns and mood shifts',
-    color: 'blue',
-    prompts: [
-      'How would you rate your overall mood today (1-10)?',
-      'What emotions did you experience most strongly?',
-      'How many hours did you sleep last night?',
-      'What activities brought you joy or satisfaction?',
-      'What challenges did you face today?',
-      'What are you grateful for today?',
-      'What do you want to focus on tomorrow?'
-    ]
-  },
-  {
-    id: 'episode-reflection',
-    name: 'Episode Reflection',
-    description: 'Process and learn from manic or depressive episodes',
-    color: 'purple',
-    prompts: [
-      'What type of episode did you experience (manic, hypomanic, depressive, mixed)?',
-      'What early warning signs did you notice?',
-      'What triggered this episode (if identifiable)?',
-      'How did this episode affect your daily life?',
-      'What coping strategies did you try? Which ones helped?',
-      'What would you do differently next time?',
-      'Who in your support network was helpful during this time?',
-      'What did you learn about yourself from this experience?'
-    ]
-  },
-  {
-    id: 'therapy-prep',
-    name: 'Therapy Preparation',
-    description: 'Organize thoughts and goals before therapy sessions',
-    color: 'green',
-    prompts: [
-      'What has happened since your last session?',
-      'What challenges are you currently facing?',
-      'What victories or progress do you want to share?',
-      'What specific topics do you want to discuss?',
-      'Are there any new symptoms or concerns?',
-      'How are your medications working?',
-      'What questions do you have for your therapist?',
-      'What goals do you want to work on?'
-    ]
-  },
-  {
-    id: 'trigger-analysis',
-    name: 'Trigger Analysis',
-    description: 'Identify and understand your personal triggers',
-    color: 'red',
-    prompts: [
-      'What situation, event, or stressor occurred?',
-      'How did you feel physically in your body?',
-      'What emotions came up immediately?',
-      'What thoughts went through your mind?',
-      'How did you respond or react?',
-      'Have you encountered this trigger before?',
-      'What patterns do you notice with this trigger?',
-      'What coping strategies could help with this trigger in the future?'
-    ]
-  },
-  {
-    id: 'gratitude-strengths',
-    name: 'Gratitude & Strengths',
-    description: 'Focus on positive aspects and personal strengths',
-    color: 'yellow',
-    prompts: [
-      'What are three things you are grateful for today?',
-      'What personal strength did you use today?',
-      'What compliment would you give yourself?',
-      'What challenge have you overcome recently?',
-      'Who are the people who support you?',
-      'What progress have you made in managing your bipolar disorder?',
-      'What brings meaning to your life?',
-      'What are you looking forward to?'
-    ]
-  }
-]
+interface FormData {
+  title: string
+  content: string
+  mood_at_time: string
+  mood_score: number | null
+  location: string
+  weather: string
+  tags: string[]
+  category: string
+  is_private: boolean
+  is_favorite: boolean
+  episode_type: string
+  episode_severity: number | null
+  entry_date: string
+}
 
 export default function JournalPage() {
-  const [selectedTemplate, setSelectedTemplate] = useState<typeof journalTemplates[0] | null>(null)
-  const [responses, setResponses] = useState<Record<string, string>>({})
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  
+  // State
+  const [entries, setEntries] = useState<JournalEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterCategory, setFilterCategory] = useState<string>('all')
+  const [filterTag, setFilterTag] = useState<string>('all')
+  const [showFilters, setShowFilters] = useState(false)
+  
+  // Form data
+  const [formData, setFormData] = useState<FormData>({
+    title: '',
+    content: '',
+    mood_at_time: '',
+    mood_score: null,
+    location: '',
+    weather: '',
+    tags: [],
+    category: 'daily',
+    is_private: true,
+    is_favorite: false,
+    episode_type: '',
+    episode_severity: null,
+    entry_date: new Date().toISOString().split('T')[0]
+  })
+  
+  // Tag input
+  const [tagInput, setTagInput] = useState('')
 
-  const handleSave = () => {
-    if (!selectedTemplate) return
-
-    const entry: JournalEntry = {
-      templateName: selectedTemplate.name,
-      date: new Date().toISOString(),
-      responses
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login')
     }
+  }, [status, router])
 
-    // Save to localStorage
-    const existingEntries = JSON.parse(localStorage.getItem('journal-entries') || '[]')
-    existingEntries.push(entry)
-    localStorage.setItem('journal-entries', JSON.stringify(existingEntries))
+  // Fetch entries on mount
+  useEffect(() => {
+    if (session) {
+      fetchEntries()
+    }
+  }, [session])
 
-    alert('Journal entry saved!')
-    setResponses({})
-    setSelectedTemplate(null)
+  // Fetch journal entries
+  const fetchEntries = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const params = new URLSearchParams()
+      if (filterCategory !== 'all') params.append('category', filterCategory)
+      if (filterTag !== 'all') params.append('tag', filterTag)
+      
+      const response = await fetch(`/api/journal?${params.toString()}`, {
+        credentials: 'include' // Include cookies in the request
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch journal entries')
+      }
+      
+      const data = await response.json()
+      setEntries(data.entries || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('Error fetching entries:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handlePrint = () => {
-    window.print()
-  }
-
-  const exportTemplate = (template: typeof journalTemplates[0]) => {
-    const content = `${template.name}\n\nDate: ___________\n\n${
-      template.prompts.map((prompt, index) => 
-        `${index + 1}. ${prompt}\n\n\n\n`
-      ).join('')
-    }`
+  // Save journal entry
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     
-    const blob = new Blob([content], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${template.id}-template.txt`
-    a.click()
-    URL.revokeObjectURL(url)
+    if (!formData.content.trim()) {
+      setError('Please write something in your journal')
+      return
+    }
+    
+    try {
+      setSaving(true)
+      setError(null)
+      
+      const endpoint = isEditing && editingId 
+        ? `/api/journal?id=${editingId}` 
+        : '/api/journal'
+      
+      const method = isEditing ? 'PUT' : 'POST'
+      
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies in the request
+        body: JSON.stringify(formData),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        const errorMessage = errorData.message || errorData.error || 'Failed to save journal entry'
+        const errorDetail = errorData.detail ? ` (${errorData.detail})` : ''
+        throw new Error(`${errorMessage}${errorDetail}`)
+      }
+      
+      const data = await response.json()
+      
+      // Update entries list
+      if (isEditing && editingId) {
+        setEntries(entries.map(entry => 
+          entry.id === editingId ? data.entry : entry
+        ))
+      } else {
+        setEntries([data.entry, ...entries])
+      }
+      
+      // Reset form
+      resetForm()
+      setShowForm(false)
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save entry')
+      console.error('Error saving entry:', err)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  if (selectedTemplate) {
+  // Delete entry
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this journal entry?')) {
+      return
+    }
+    
+    try {
+      const response = await fetch(`/api/journal?id=${id}`, {
+        method: 'DELETE',
+        credentials: 'include' // Include cookies in the request
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete entry')
+      }
+      
+      setEntries(entries.filter(entry => entry.id !== id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete entry')
+      console.error('Error deleting entry:', err)
+    }
+  }
+
+  // Edit entry
+  const handleEdit = (entry: JournalEntry) => {
+    setFormData({
+      title: entry.title || '',
+      content: entry.content,
+      mood_at_time: entry.mood_at_time || '',
+      mood_score: entry.mood_score,
+      location: entry.location || '',
+      weather: entry.weather || '',
+      tags: entry.tags || [],
+      category: entry.category,
+      is_private: entry.is_private,
+      is_favorite: entry.is_favorite,
+      episode_type: entry.episode_type || '',
+      episode_severity: entry.episode_severity,
+      entry_date: entry.entry_date
+    })
+    setIsEditing(true)
+    setEditingId(entry.id)
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Toggle favorite
+  const toggleFavorite = async (entry: JournalEntry) => {
+    try {
+      const response = await fetch(`/api/journal?id=${entry.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_favorite: !entry.is_favorite
+        }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update favorite status')
+      }
+      
+      const data = await response.json()
+      setEntries(entries.map(e => e.id === entry.id ? data.entry : e))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update favorite')
+    }
+  }
+
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      content: '',
+      mood_at_time: '',
+      mood_score: null,
+      location: '',
+      weather: '',
+      tags: [],
+      category: 'daily',
+      is_private: true,
+      is_favorite: false,
+      episode_type: '',
+      episode_severity: null,
+      entry_date: new Date().toISOString().split('T')[0]
+    })
+    setIsEditing(false)
+    setEditingId(null)
+    setTagInput('')
+  }
+
+  // Add tag
+  const addTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData({
+        ...formData,
+        tags: [...formData.tags, tagInput.trim()]
+      })
+      setTagInput('')
+    }
+  }
+
+  // Remove tag
+  const removeTag = (tag: string) => {
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter(t => t !== tag)
+    })
+  }
+
+  // Filter entries
+  const filteredEntries = entries.filter(entry => {
+    const matchesSearch = searchTerm === '' || 
+      entry.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (entry.title?.toLowerCase().includes(searchTerm.toLowerCase()))
+    
+    return matchesSearch
+  })
+
+  // Get all unique tags
+  const allTags = Array.from(
+    new Set(entries.flatMap(entry => entry.tags || []))
+  )
+
+  if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <button
-              onClick={() => setSelectedTemplate(null)}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-            >
-              <ArrowLeftIcon className="h-5 w-5" />
-              Back to Templates
-            </button>
-            <div className="flex gap-2">
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <PrinterIcon className="h-4 w-4" />
-                Print
-              </button>
-            </div>
-          </div>
-
-          {/* Journal Form */}
-          <div className="bg-white rounded-xl shadow-sm border p-8">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">{selectedTemplate.name}</h1>
-              <p className="text-gray-600 mt-1">{selectedTemplate.description}</p>
-              <p className="text-sm text-gray-500 mt-2">
-                Date: {new Date().toLocaleDateString()}
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {selectedTemplate.prompts.map((prompt, index) => (
-                <div key={index}>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    {index + 1}. {prompt}
-                  </label>
-                  <textarea
-                    value={responses[index] || ''}
-                    onChange={(e) => setResponses(prev => ({ ...prev, [index]: e.target.value }))}
-                    className="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 min-h-[120px]"
-                    placeholder="Take your time to reflect and write your thoughts..."
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 flex gap-4">
-              <button
-                onClick={handleSave}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
-              >
-                Save Entry
-              </button>
-              <button
-                onClick={() => {
-                  setResponses({})
-                  setSelectedTemplate(null)
-                }}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-semibold transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading journal...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Journal Templates
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Guided journaling prompts designed specifically for managing bipolar disorder. 
-              Reflect, process experiences, and track patterns with structured writing.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Template Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {journalTemplates.map((template) => (
-            <TemplateCard 
-              key={template.id}
-              template={template}
-              onSelect={() => setSelectedTemplate(template)}
-              onExport={() => exportTemplate(template)}
-            />
-          ))}
-        </div>
-
-        {/* Benefits Section */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm border mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-            Benefits of Journaling for Bipolar Disorder
-          </h2>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center">
-              <DocumentTextIcon className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Process Episodes</h3>
-              <p className="text-gray-600 text-sm">
-                Understand and learn from manic and depressive episodes through guided reflection.
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">My Journal</h1>
+              <p className="mt-1 text-gray-600">
+                A safe space to record your thoughts and feelings
               </p>
             </div>
+            <button
+              onClick={() => {
+                resetForm()
+                setShowForm(!showForm)
+              }}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
+            >
+              {showForm ? (
+                <>
+                  <XMarkIcon className="h-5 w-5" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <PlusIcon className="h-5 w-5" />
+                  New Entry
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Search and Filter Bar */}
+          <div className="mt-4 flex gap-4">
+            <div className="flex-1 relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search journal entries..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+            >
+              <FunnelIcon className="h-5 w-5" />
+              Filters
+            </button>
+          </div>
+
+          {/* Filters */}
+          {showFilters && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category
+                </label>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => {
+                    setFilterCategory(e.target.value)
+                    fetchEntries()
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="daily">Daily</option>
+                  <option value="episode">Episode</option>
+                  <option value="gratitude">Gratitude</option>
+                  <option value="therapy">Therapy Notes</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tag
+                </label>
+                <select
+                  value={filterTag}
+                  onChange={(e) => {
+                    setFilterTag(e.target.value)
+                    fetchEntries()
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All Tags</option>
+                  {allTags.map(tag => (
+                    <option key={tag} value={tag}>{tag}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* Journal Entry Form */}
+        {showForm && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              {isEditing ? 'Edit Entry' : 'New Journal Entry'}
+            </h2>
             
-            <div className="text-center">
-              <QuestionMarkCircleIcon className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Identify Triggers</h3>
-              <p className="text-gray-600 text-sm">
-                Recognize patterns and triggers that may contribute to mood episodes.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <HeartIcon className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Improve Therapy</h3>
-              <p className="text-gray-600 text-sm">
-                Prepare for therapy sessions and communicate more effectively with providers.
-              </p>
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.entry_date}
+                  onChange={(e) => setFormData({ ...formData, entry_date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  required
+                />
+              </div>
 
-            <div className="text-center">
-              <ExclamationTriangleIcon className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Track Progress</h3>
-              <p className="text-gray-600 text-sm">
-                Monitor your growth and celebrate victories in managing your condition.
-              </p>
-            </div>
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Title (optional)
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Give your entry a title..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Content */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  What's on your mind? <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  placeholder="Write your thoughts here..."
+                  rows={8}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  required
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  {formData.content.length} characters
+                </p>
+              </div>
+
+              {/* Mood at Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    How were you feeling?
+                  </label>
+                  <select
+                    value={formData.mood_at_time}
+                    onChange={(e) => setFormData({ ...formData, mood_at_time: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">Select mood...</option>
+                    <option value="great">Great</option>
+                    <option value="good">Good</option>
+                    <option value="okay">Okay</option>
+                    <option value="low">Low</option>
+                    <option value="depressed">Depressed</option>
+                    <option value="anxious">Anxious</option>
+                    <option value="irritable">Irritable</option>
+                    <option value="elevated">Elevated</option>
+                    <option value="mixed">Mixed</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mood Score (-5 to +5)
+                  </label>
+                  <input
+                    type="number"
+                    min="-5"
+                    max="5"
+                    value={formData.mood_score || ''}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      mood_score: e.target.value ? parseInt(e.target.value) : null 
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="daily">Daily Entry</option>
+                  <option value="episode">Episode Documentation</option>
+                  <option value="gratitude">Gratitude</option>
+                  <option value="therapy">Therapy Notes</option>
+                  <option value="reflection">Reflection</option>
+                </select>
+              </div>
+
+              {/* Episode Information (conditional) */}
+              {formData.category === 'episode' && (
+                <div className="grid grid-cols-2 gap-4 p-4 bg-amber-50 rounded-lg">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Episode Type
+                    </label>
+                    <select
+                      value={formData.episode_type}
+                      onChange={(e) => setFormData({ ...formData, episode_type: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Select type...</option>
+                      <option value="manic">Manic</option>
+                      <option value="hypomanic">Hypomanic</option>
+                      <option value="depressive">Depressive</option>
+                      <option value="mixed">Mixed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Severity (1-10)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={formData.episode_severity || ''}
+                      onChange={(e) => setFormData({ 
+                        ...formData, 
+                        episode_severity: e.target.value ? parseInt(e.target.value) : null 
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Location & Weather */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="Where are you?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Weather
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.weather}
+                    onChange={(e) => setFormData({ ...formData, weather: e.target.value })}
+                    placeholder="What's the weather like?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tags
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addTag()
+                      }
+                    }}
+                    placeholder="Add tags..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                  >
+                    Add
+                  </button>
+                </div>
+                {formData.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.tags.map(tag => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(tag)}
+                          className="hover:text-purple-900"
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Privacy Options */}
+              <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-lg">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_private}
+                    onChange={(e) => setFormData({ ...formData, is_private: e.target.checked })}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Keep this entry private
+                  </span>
+                </label>
+                
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_favorite}
+                    onChange={(e) => setFormData({ ...formData, is_favorite: e.target.checked })}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Mark as favorite
+                  </span>
+                </label>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? 'Saving...' : (isEditing ? 'Update Entry' : 'Save Entry')}
+                </button>
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetForm()
+                      setShowForm(false)
+                    }}
+                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
+        )}
+
+        {/* Journal Entries List */}
+        <div className="space-y-4">
+          {filteredEntries.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+              <p className="text-gray-500 text-lg">
+                {searchTerm || filterCategory !== 'all' || filterTag !== 'all'
+                  ? 'No entries match your filters'
+                  : 'No journal entries yet. Start writing!'}
+              </p>
+            </div>
+          ) : (
+            filteredEntries.map(entry => (
+              <div
+                key={entry.id}
+                className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    {entry.title && (
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        {entry.title}
+                      </h3>
+                    )}
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <span>{new Date(entry.entry_date).toLocaleDateString()}</span>
+                      {entry.mood_at_time && (
+                        <span className="capitalize">• {entry.mood_at_time}</span>
+                      )}
+                      {entry.mood_score !== null && (
+                        <span>• Mood: {entry.mood_score > 0 ? '+' : ''}{entry.mood_score}</span>
+                      )}
+                      {entry.location && (
+                        <span>• 📍 {entry.location}</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleFavorite(entry)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      title={entry.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      {entry.is_favorite ? (
+                        <BookmarkSolidIcon className="h-5 w-5 text-yellow-500" />
+                      ) : (
+                        <BookmarkIcon className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleEdit(entry)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Edit entry"
+                    >
+                      <PencilSquareIcon className="h-5 w-5 text-gray-600" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(entry.id)}
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete entry"
+                    >
+                      <TrashIcon className="h-5 w-5 text-red-600" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Category & Episode Info */}
+                <div className="flex gap-2 mb-3">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                    {entry.category}
+                  </span>
+                  {entry.episode_type && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                      {entry.episode_type}
+                      {entry.episode_severity && ` (${entry.episode_severity}/10)`}
+                    </span>
+                  )}
+                  {entry.is_private && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                      Private
+                    </span>
+                  )}
+                </div>
+
+                {/* Content */}
+                <p className="text-gray-700 whitespace-pre-wrap mb-3">
+                  {entry.content.length > 300 
+                    ? `${entry.content.substring(0, 300)}...` 
+                    : entry.content}
+                </p>
+
+                {/* Tags */}
+                {entry.tags && entry.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {entry.tags.map(tag => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Weather */}
+                {entry.weather && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Weather: {entry.weather}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
         </div>
 
-        {/* Tips Section */}
-        <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-          <h3 className="text-lg font-bold text-blue-900 mb-4">Journaling Tips</h3>
-          <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
-            <ul className="space-y-2">
-              <li>• Write without judgment - there are no wrong answers</li>
-              <li>• Be honest about your thoughts and feelings</li>
-              <li>• Don't worry about grammar or spelling</li>
-              <li>• Take breaks if you feel overwhelmed</li>
-            </ul>
-            <ul className="space-y-2">
-              <li>• Review past entries to identify patterns</li>
-              <li>• Share insights with your healthcare team</li>
-              <li>• Set aside regular time for journaling</li>
-              <li>• Use templates as starting points, not rigid rules</li>
-            </ul>
+        {/* Empty State CTA */}
+        {entries.length === 0 && !showForm && (
+          <div className="text-center py-12">
+            <button
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+            >
+              <PlusIcon className="h-5 w-5" />
+              Write Your First Entry
+            </button>
           </div>
-        </div>
-
-        {/* Privacy Notice */}
-        <div className="mt-6 bg-green-50 rounded-lg p-4 border border-green-200">
-          <p className="text-green-800 text-sm">
-            <strong>Privacy:</strong> All journal entries are stored locally on your device. 
-            You can export templates as text files to write by hand or save digitally. 
-            Your personal reflections remain completely private.
-          </p>
-        </div>
-
-        {/* Crisis Notice */}
-        <div className="mt-4 bg-red-50 rounded-lg p-4 border border-red-200">
-          <p className="text-red-800 text-sm">
-            <strong>Important:</strong> If journaling brings up thoughts of self-harm or crisis, 
-            please stop and reach out for support immediately. Visit our{' '}
-            <Link href="/crisis-resources" className="underline font-semibold">
-              crisis resources page
-            </Link>{' '}
-            or call 988 for the Crisis Lifeline.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function TemplateCard({ 
-  template, 
-  onSelect, 
-  onExport 
-}: { 
-  template: typeof journalTemplates[0]
-  onSelect: () => void
-  onExport: () => void
-}) {
-  const colorClasses = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-600',
-    purple: 'bg-purple-50 border-purple-200 text-purple-600', 
-    green: 'bg-green-50 border-green-200 text-green-600',
-    red: 'bg-red-50 border-red-200 text-red-600',
-    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-600'
-  }
-
-  return (
-    <div className={`${colorClasses[template.color as keyof typeof colorClasses] || colorClasses.blue} border rounded-xl p-6 transition-all hover:shadow-md`}>
-      <div className="mb-4">
-        <DocumentTextIcon className="h-8 w-8 mb-3" />
-        <h3 className="text-xl font-bold text-gray-900 mb-2">
-          {template.name}
-        </h3>
-        <p className="text-gray-700 text-sm mb-4">
-          {template.description}
-        </p>
-        <p className="text-xs text-gray-600">
-          {template.prompts.length} guided prompts
-        </p>
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          onClick={onSelect}
-          className="flex-1 bg-white hover:bg-gray-50 text-gray-900 px-4 py-2 rounded-lg font-semibold border border-gray-200 transition-colors text-sm"
-        >
-          Start Writing
-        </button>
-        <button
-          onClick={onExport}
-          className="bg-white hover:bg-gray-50 text-gray-700 p-2 rounded-lg border border-gray-200 transition-colors"
-          title="Export as text file"
-        >
-          <DocumentArrowDownIcon className="h-4 w-4" />
-        </button>
+        )}
       </div>
     </div>
   )

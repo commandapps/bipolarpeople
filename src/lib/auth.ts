@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import NextAuth, { type NextAuthOptions } from 'next-auth'
+import { getServerSession } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from './db'
 import bcrypt from 'bcryptjs'
@@ -46,14 +47,21 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }: any) {
+      // On first login, user object is provided
       if (user) {
+        token.sub = user.id  // Ensure sub is set to user.id
+        token.id = user.id   // Also set id for compatibility
+        token.email = user.email
+        token.name = user.name
         token.username = user.username
       }
       return token
     },
     async session({ session, token }: any) {
       if (token) {
-        session.user.id = token.sub
+        session.user.id = token.sub || token.id  // Use sub first, fallback to id
+        session.user.email = token.email
+        session.user.name = token.name
         session.user.username = token.username
       }
       return session
@@ -68,3 +76,21 @@ export const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }
+
+// Helper function to get session in App Router API routes
+export async function getSession(request: Request) {
+  const cookies = request.headers.get('cookie') || ''
+  
+  // Create a mock request object for getServerSession
+  const mockReq = {
+    headers: {
+      get: (name: string) => {
+        if (name.toLowerCase() === 'cookie') return cookies
+        return request.headers.get(name)
+      },
+      cookie: cookies,
+    },
+  } as any
+  
+  return await getServerSession(mockReq, authOptions)
+}
