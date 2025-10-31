@@ -1,4 +1,8 @@
 import { sql } from '@vercel/postgres'
+import dotenv from 'dotenv'
+
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' })
 
 async function checkDatabase() {
   try {
@@ -14,6 +18,8 @@ async function checkDatabase() {
       'medication_logs',
       'journal_entries',
       'episode_plans',
+      'episode_timeline',
+      'user_settings',
     ]
 
     for (const table of tables) {

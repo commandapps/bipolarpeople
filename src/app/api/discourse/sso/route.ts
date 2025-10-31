@@ -44,13 +44,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Create Discourse user object
-    const user = session.user as any
     const discourseUser = createDiscourseUser({
-      id: user.id,
-      name: user.name,
-      email: user.email!,
-      username: user.username || '',
-      image: user.image,
+      id: session.user.id,
+      name: session.user.name || null,
+      email: session.user.email!,
+      username: session.user.username || '',
+      image: session.user.image || null,
     })
 
     // Generate SSO URL for Discourse

@@ -13,6 +13,7 @@
     "dev:port": "next dev --turbopack -p 3005",
     "node:lts": "nvm use 20",
     "clean:install": "rm -rf node_modules package-lock.json && npm install",
+    "db:migrate": "tsx scripts/migrate.ts",
     "db:check": "tsx scripts/check-db.ts",
     "vercel:whoami": "vercel whoami || vercel login",
     "vercel:link": "vercel link --yes",
