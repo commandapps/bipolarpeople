@@ -78,6 +78,7 @@ const handler = NextAuth(authOptions)
 export { handler as GET, handler as POST }
 
 // Helper function to get session in App Router API routes
+// Note: This function is deprecated - use getSessionFromCookie from '@/lib/session' instead
 export async function getSession(request: Request) {
   const cookies = request.headers.get('cookie') || ''
   
@@ -92,5 +93,12 @@ export async function getSession(request: Request) {
     },
   } as any
   
-  return await getServerSession(mockReq, authOptions)
+  // Create a mock response object for getServerSession
+  const mockRes = {
+    getHeader: () => undefined,
+    setHeader: () => {},
+    removeHeader: () => {},
+  } as any
+  
+  return await getServerSession(mockReq, mockRes, authOptions)
 }
