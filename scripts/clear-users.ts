@@ -9,8 +9,8 @@ async function clearAllUsers() {
     console.log('🗑️  Clearing all user registrations and related data...\n')
 
     // First, let's see what we're deleting
-    const userCount = await sql`SELECT COUNT(*) FROM users`
-    console.log(`Found ${userCount.rows[0].count} users to delete\n`)
+    const userCount = await sql`SELECT COUNT(*) as count FROM users`
+    console.log(`Found ${(userCount.rows[0] as { count: string }).count} users to delete\n`)
 
     // Clear user-related data tables first (due to foreign key constraints)
     // These should cascade, but we'll be explicit
@@ -51,22 +51,26 @@ async function clearAllUsers() {
     
     // Finally, delete all users
     const deleteResult = await sql`DELETE FROM users`
-    console.log(`✓ Cleared users (${deleteResult.count || 0} rows deleted)`)
+    console.log(`✓ Cleared users (${deleteResult.rowCount || 0} rows deleted)`)
     
     // Verify cleanup
-    const remainingUsers = await sql`SELECT COUNT(*) FROM users`
-    const remainingTokens = await sql`SELECT COUNT(*) FROM verification_tokens`
-    const remainingSessions = await sql`SELECT COUNT(*) FROM sessions`
+    const remainingUsers = await sql`SELECT COUNT(*) as count FROM users`
+    const remainingTokens = await sql`SELECT COUNT(*) as count FROM verification_tokens`
+    const remainingSessions = await sql`SELECT COUNT(*) as count FROM sessions`
+    
+    const usersCount = (remainingUsers.rows[0] as { count: string }).count
+    const tokensCount = (remainingTokens.rows[0] as { count: string }).count
+    const sessionsCount = (remainingSessions.rows[0] as { count: string }).count
     
     console.log('\n✅ Cleanup complete!')
     console.log('\nVerification:')
-    console.log(`  - Users remaining: ${remainingUsers.rows[0].count}`)
-    console.log(`  - Verification tokens remaining: ${remainingTokens.rows[0].count}`)
-    console.log(`  - Sessions remaining: ${remainingSessions.rows[0].count}`)
+    console.log(`  - Users remaining: ${usersCount}`)
+    console.log(`  - Verification tokens remaining: ${tokensCount}`)
+    console.log(`  - Sessions remaining: ${sessionsCount}`)
     
-    if (remainingUsers.rows[0].count === '0' && 
-        remainingTokens.rows[0].count === '0' && 
-        remainingSessions.rows[0].count === '0') {
+    if (usersCount === '0' && 
+        tokensCount === '0' && 
+        sessionsCount === '0') {
       console.log('\n✨ All user data has been successfully cleared!')
       console.log('   You can now register new test accounts.')
     }
