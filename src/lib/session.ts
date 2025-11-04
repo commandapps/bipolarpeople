@@ -39,9 +39,9 @@ export async function getSessionFromCookie(request: NextRequest): Promise<{ user
 
     // Use NextAuth's getToken function to properly decode the JWT
     // This handles NextAuth's encoding/encryption correctly
-    const secret = process.env.AUTH_SECRET
+    const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
     if (!secret) {
-      console.error('AUTH_SECRET not set')
+      console.error('NEXTAUTH_SECRET or AUTH_SECRET not set')
       return null
     }
 
