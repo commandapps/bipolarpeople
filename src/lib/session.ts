@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
+import { authOptions } from './auth'
 
 /**
  * Get session from NextAuth JWT cookie using NextAuth's built-in decoder
@@ -37,16 +38,16 @@ export async function getSessionFromCookie(request: NextRequest): Promise<{ user
 
     console.log('Found session token cookie, length:', sessionToken.length)
 
-    // Use NextAuth's getToken function to properly decode the JWT
-    // This handles NextAuth's encoding/encryption correctly
-    const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
+    // Use the SAME secret that authOptions uses - this is critical!
+    // This ensures encryption during login and decryption here use identical secrets
+    const secret = authOptions.secret
     if (!secret) {
-      console.error('NEXTAUTH_SECRET or AUTH_SECRET not set')
+      console.error('authOptions.secret not set')
       return null
     }
     
     console.log('Secret info:', {
-      using: process.env.NEXTAUTH_SECRET ? 'NEXTAUTH_SECRET' : 'AUTH_SECRET',
+      source: 'authOptions.secret',
       length: secret.length,
       startsWithWhitespace: secret[0] === ' ' || secret[0] === '\n' || secret[0] === '\t',
       endsWithWhitespace: secret[secret.length - 1] === ' ' || secret[secret.length - 1] === '\n' || secret[secret.length - 1] === '\t'

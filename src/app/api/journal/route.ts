@@ -2,54 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { sql } from '@vercel/postgres'
-import { getSessionFromCookie } from '@/lib/session'
 
 // GET - Fetch journal entries
 export async function GET(request: NextRequest) {
   try {
-    console.log('\n=== GET /api/journal ===')
-    console.log('Cookie header:', request.headers.get('cookie') || 'NO COOKIES')
-    console.log('NEXTAUTH_SECRET is set:', !!process.env.NEXTAUTH_SECRET)
-    
-    // Try the custom session helper first (decodes JWT directly)
-    let session = await getSessionFromCookie(request)
-    console.log('Custom session helper result:', session ? `Found user ${session.user.id}` : 'Not found')
-    
-    // Fallback to getServerSession if custom helper fails
-    if (!session) {
-      console.log('Trying getServerSession fallback...')
-      // Read cookies directly from request headers (avoid using cookies() which can hang)
-      const cookieHeader = request.headers.get('cookie') || ''
-      
-      const req = {
-        headers: {
-          get: (name: string) => {
-            if (name.toLowerCase() === 'cookie') return cookieHeader
-            return request.headers.get(name) || undefined
-          },
-          cookie: cookieHeader
-        }
-      } as any
-      
-      const res = {
-        getHeader: () => undefined,
-        setHeader: () => {},
-        removeHeader: () => {},
-      } as any
-      
-      const nextAuthSession = await getServerSession(req as any, res as any, authOptions)
-      console.log('getServerSession result:', nextAuthSession ? `Found user ${nextAuthSession.user?.id}` : 'Not found')
-      if (nextAuthSession) {
-        session = nextAuthSession as any
-      }
-    }
+    // Use the simple getServerSession pattern that works in production
+    const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      console.error('GET Unauthorized - No session found. Session object:', JSON.stringify(session, null, 2))
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    console.log('✅ GET Authorized - User ID:', session.user.id)
 
     // Convert user.id to integer - database expects INTEGER
     const userId = parseInt(session.user.id, 10)
@@ -96,52 +58,14 @@ export async function GET(request: NextRequest) {
 // POST - Create journal entry
 export async function POST(request: NextRequest) {
   try {
-    console.log('\n=== POST /api/journal ===')
-    console.log('Cookie header:', request.headers.get('cookie') || 'NO COOKIES')
-    console.log('NEXTAUTH_SECRET is set:', !!process.env.NEXTAUTH_SECRET)
-    
-    // Try the custom session helper first (decodes JWT directly)
-    let session = await getSessionFromCookie(request)
-    console.log('Custom session helper result:', session ? `Found user ${session.user.id}` : 'Not found')
-    
-    // Fallback to getServerSession if custom helper fails
-    if (!session) {
-      console.log('Trying getServerSession fallback...')
-      // Read cookies directly from request headers (avoid using cookies() which can hang)
-      const cookieHeader = request.headers.get('cookie') || ''
-      
-      const req = {
-        headers: {
-          get: (name: string) => {
-            if (name.toLowerCase() === 'cookie') return cookieHeader
-            return request.headers.get(name) || undefined
-          },
-          cookie: cookieHeader
-        }
-      } as any
-      
-      const res = {
-        getHeader: () => undefined,
-        setHeader: () => {},
-        removeHeader: () => {},
-      } as any
-      
-      const nextAuthSession = await getServerSession(req as any, res as any, authOptions)
-      console.log('getServerSession result:', nextAuthSession ? `Found user ${nextAuthSession.user?.id}` : 'Not found')
-      if (nextAuthSession) {
-        session = nextAuthSession as any
-      }
-    }
+    // Use the simple getServerSession pattern that works in production
+    const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      console.error('POST Unauthorized - No session found. Session object:', JSON.stringify(session, null, 2))
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    console.log('✅ POST Authorized - User ID:', session.user.id)
 
     const body = await request.json()
-    console.log('Received body:', JSON.stringify(body, null, 2))
 
     // Validate required fields
     if (!body.content || !body.entry_date) {
@@ -254,33 +178,7 @@ export async function POST(request: NextRequest) {
 // PUT - Update journal entry
 export async function PUT(request: NextRequest) {
   try {
-    // Try the custom session helper first
-    let session = await getSessionFromCookie(request)
-    
-    // Fallback to getServerSession if custom helper fails
-    if (!session) {
-      const cookieHeader = request.headers.get('cookie') || ''
-      const req = {
-        headers: {
-          get: (name: string) => {
-            if (name.toLowerCase() === 'cookie') return cookieHeader
-            return request.headers.get(name) || undefined
-          },
-          cookie: cookieHeader
-        }
-      } as any
-      
-      const res = {
-        getHeader: () => undefined,
-        setHeader: () => {},
-        removeHeader: () => {},
-      } as any
-      
-      const nextAuthSession = await getServerSession(req as any, res as any, authOptions)
-      if (nextAuthSession) {
-        session = nextAuthSession as any
-      }
-    }
+    const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -369,33 +267,7 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete journal entry
 export async function DELETE(request: NextRequest) {
   try {
-    // Try the custom session helper first
-    let session = await getSessionFromCookie(request)
-    
-    // Fallback to getServerSession if custom helper fails
-    if (!session) {
-      const cookieHeader = request.headers.get('cookie') || ''
-      const req = {
-        headers: {
-          get: (name: string) => {
-            if (name.toLowerCase() === 'cookie') return cookieHeader
-            return request.headers.get(name) || undefined
-          },
-          cookie: cookieHeader
-        }
-      } as any
-      
-      const res = {
-        getHeader: () => undefined,
-        setHeader: () => {},
-        removeHeader: () => {},
-      } as any
-      
-      const nextAuthSession = await getServerSession(req as any, res as any, authOptions)
-      if (nextAuthSession) {
-        session = nextAuthSession as any
-      }
-    }
+    const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -11,8 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse user ID as integer (session.user.id is a string)
-    const userId = parseInt(session.user.id as string, 10)
+    const userId = parseInt(session.user.id, 10)
     if (isNaN(userId)) {
       return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
     }
@@ -46,8 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse user ID as integer (session.user.id is a string)
-    const userId = parseInt(session.user.id as string, 10)
+    const userId = parseInt(session.user.id, 10)
     if (isNaN(userId)) {
       return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
     }
@@ -110,8 +108,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse user ID as integer (session.user.id is a string)
-    const userId = parseInt(session.user.id as string, 10)
+    const userId = parseInt(session.user.id, 10)
     if (isNaN(userId)) {
       return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
     }
