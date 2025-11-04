@@ -92,7 +92,7 @@ export default function MedicationTrackerPage() {
     }
   }
 
-  const handleLogMedication = async (medicationId: number, taken: boolean, sideEffects: string[] = [], moodBefore?: number, moodAfter?: number, notes: string = '') => {
+  const handleLogMedication = async (medicationId: number, taken: boolean, sideEffects: string[] = [], moodBefore?: number, moodAfter?: number, notes?: string) => {
     await logMedication({
       medication_id: medicationId,
       taken_at: new Date().toISOString(),
@@ -384,7 +384,7 @@ function MedicationCard({
 }: {
   medication: { id: number; medication_name: string; dosage?: string; dosage_unit?: string; frequency?: string; prescriber_name?: string }
   log?: { id: number; taken: boolean; taken_at: string; side_effects_experienced?: string; notes?: string }
-  onLog: (taken: boolean, sideEffects: string[], moodBefore?: number, moodAfter?: number, notes: string) => void
+  onLog: (taken: boolean, sideEffects: string[], moodBefore?: number, moodAfter?: number, notes?: string) => void
   onDelete: () => void
   saving?: boolean
 }) {
