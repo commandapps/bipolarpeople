@@ -44,6 +44,13 @@ export async function getSessionFromCookie(request: NextRequest): Promise<{ user
       console.error('NEXTAUTH_SECRET or AUTH_SECRET not set')
       return null
     }
+    
+    console.log('Secret info:', {
+      using: process.env.NEXTAUTH_SECRET ? 'NEXTAUTH_SECRET' : 'AUTH_SECRET',
+      length: secret.length,
+      startsWithWhitespace: secret[0] === ' ' || secret[0] === '\n' || secret[0] === '\t',
+      endsWithWhitespace: secret[secret.length - 1] === ' ' || secret[secret.length - 1] === '\n' || secret[secret.length - 1] === '\t'
+    })
 
     try {
       // Build a request object with the cookie for getToken
