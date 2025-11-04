@@ -8,6 +8,9 @@ import { getSessionFromCookie } from '@/lib/session'
 export async function GET(request: NextRequest) {
   try {
     console.log('\n=== GET /api/journal ===')
+    console.log('Cookie header:', request.headers.get('cookie') || 'NO COOKIES')
+    console.log('NEXTAUTH_SECRET is set:', !!process.env.NEXTAUTH_SECRET)
+    
     // Try the custom session helper first (decodes JWT directly)
     let session = await getSessionFromCookie(request)
     console.log('Custom session helper result:', session ? `Found user ${session.user.id}` : 'Not found')
@@ -94,6 +97,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log('\n=== POST /api/journal ===')
+    console.log('Cookie header:', request.headers.get('cookie') || 'NO COOKIES')
+    console.log('NEXTAUTH_SECRET is set:', !!process.env.NEXTAUTH_SECRET)
+    
     // Try the custom session helper first (decodes JWT directly)
     let session = await getSessionFromCookie(request)
     console.log('Custom session helper result:', session ? `Found user ${session.user.id}` : 'Not found')
