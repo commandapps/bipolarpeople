@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
         ${body.energy_level || null},
         ${body.anxiety_level || null},
         ${body.sleep_hours || null},
-        ${JSON.stringify(body.activities || [])},
-        ${JSON.stringify(body.symptoms || [])},
+        ${body.activities && body.activities.length > 0 ? body.activities : null},
+        ${body.symptoms && body.symptoms.length > 0 ? body.symptoms : null},
         ${body.notes || null},
         ${body.entry_date}
       )

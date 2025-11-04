@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         body.dosage || null,
         body.dosage_unit || null,
         body.frequency || null,
-        body.time_of_day || [],
+        body.time_of_day && body.time_of_day.length > 0 ? body.time_of_day : null,
         body.started_date || new Date().toISOString().split('T')[0],
         body.active ?? true,
         body.prescribed_for || null,
