@@ -7,18 +7,15 @@ import { sql } from '@vercel/postgres'
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user ID from email
-    const userResult = await sql`
-      SELECT id FROM users WHERE email = ${session.user.email} LIMIT 1
-    `
-    if (userResult.rows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Parse user ID as integer (session.user.id is a string)
+    const userId = parseInt(session.user.id as string, 10)
+    if (isNaN(userId)) {
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
     }
-    const userId = userResult.rows[0].id
 
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '30')
@@ -45,33 +42,30 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user ID from email
-    const userResult = await sql`
-      SELECT id FROM users WHERE email = ${session.user.email} LIMIT 1
-    `
-    if (userResult.rows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Parse user ID as integer (session.user.id is a string)
+    const userId = parseInt(session.user.id as string, 10)
+    if (isNaN(userId)) {
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
     }
-    const userId = userResult.rows[0].id
 
     const body = await request.json()
     
     // Validate required fields
-    if (body.mood === undefined || body.entry_date === undefined) {
+    if (body.mood_score === undefined || body.entry_date === undefined) {
       return NextResponse.json(
-        { error: 'Missing required fields: mood, entry_date' },
+        { error: 'Missing required fields: mood_score, entry_date' },
         { status: 400 }
       )
     }
 
-    // Validate ranges
-    if (body.mood < 1 || body.mood > 7) {
+    // Validate ranges (mood_score is -5 to 5)
+    if (body.mood_score < -5 || body.mood_score > 5) {
       return NextResponse.json(
-        { error: 'mood must be between 1 and 7' },
+        { error: 'mood_score must be between -5 and 5' },
         { status: 400 }
       )
     }
@@ -82,10 +76,10 @@ export async function POST(request: NextRequest) {
         sleep_hours, activities, symptoms, notes, entry_date
       ) VALUES (
         ${userId},
-        ${body.mood},
-        ${body.energy || null},
-        ${body.anxiety || null},
-        ${body.sleep || null},
+        ${body.mood_score},
+        ${body.energy_level || null},
+        ${body.anxiety_level || null},
+        ${body.sleep_hours || null},
         ${JSON.stringify(body.activities || [])},
         ${JSON.stringify(body.symptoms || [])},
         ${body.notes || null},
@@ -112,18 +106,15 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user ID from email
-    const userResult = await sql`
-      SELECT id FROM users WHERE email = ${session.user.email} LIMIT 1
-    `
-    if (userResult.rows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Parse user ID as integer (session.user.id is a string)
+    const userId = parseInt(session.user.id as string, 10)
+    if (isNaN(userId)) {
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
     }
-    const userId = userResult.rows[0].id
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

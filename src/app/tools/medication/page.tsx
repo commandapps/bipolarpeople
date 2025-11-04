@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { 
   HeartIcon,
   PlusIcon,
@@ -10,28 +12,7 @@ import {
   DocumentArrowDownIcon,
   TrashIcon
 } from '@heroicons/react/24/outline'
-
-interface Medication {
-  id: string
-  name: string
-  dosage: string
-  frequency: string
-  timeOfDay: string[]
-  prescribedBy: string
-  startDate: string
-  notes: string
-}
-
-interface MedicationEntry {
-  id: string
-  medicationId: string
-  date: string
-  time: string
-  taken: boolean
-  sideEffects: string[]
-  effectiveness: number
-  notes: string
-}
+import { useMedications } from '@/hooks/useMedications'
 
 const commonSideEffects = [
   'Drowsiness', 'Nausea', 'Dizziness', 'Headache', 'Weight gain', 
@@ -40,78 +21,109 @@ const commonSideEffects = [
 ]
 
 export default function MedicationTrackerPage() {
-  const [medications, setMedications] = useState<Medication[]>([])
-  const [entries, setEntries] = useState<MedicationEntry[]>([])
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const { medications, logs, loading, error, saving, createMedication, logMedication, deleteMedication } = useMedications()
+  
   const [showAddMed, setShowAddMed] = useState(false)
-  const [newMed, setNewMed] = useState<Partial<Medication>>({})
+  const [newMed, setNewMed] = useState({
+    medication_name: '',
+    dosage: '',
+    dosage_unit: '',
+    frequency: '',
+    time_of_day: [] as string[],
+    prescribed_for: '',
+    prescriber_name: '',
+    started_date: new Date().toISOString().split('T')[0],
+    notes: ''
+  })
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
+  // Redirect if not authenticated
   useEffect(() => {
-    const savedMeds = localStorage.getItem('bipolar-medications')
-    const savedEntries = localStorage.getItem('bipolar-medication-entries')
-    
-    if (savedMeds) setMedications(JSON.parse(savedMeds))
-    if (savedEntries) setEntries(JSON.parse(savedEntries))
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem('bipolar-medications', JSON.stringify(medications))
-  }, [medications])
-
-  useEffect(() => {
-    localStorage.setItem('bipolar-medication-entries', JSON.stringify(entries))
-  }, [entries])
-
-  const addMedication = () => {
-    if (!newMed.name || !newMed.dosage) return
-
-    const medication: Medication = {
-      id: Date.now().toString(),
-      name: newMed.name || '',
-      dosage: newMed.dosage || '',
-      frequency: newMed.frequency || 'Daily',
-      timeOfDay: newMed.timeOfDay || ['Morning'],
-      prescribedBy: newMed.prescribedBy || '',
-      startDate: newMed.startDate || new Date().toISOString().split('T')[0],
-      notes: newMed.notes || ''
+    if (status === 'unauthenticated') {
+      router.push('/login?callbackUrl=/tools/medication')
     }
+  }, [status, router])
 
-    setMedications(prev => [...prev, medication])
-    setNewMed({})
-    setShowAddMed(false)
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
-  const logMedication = (medicationId: string, taken: boolean, sideEffects: string[] = [], effectiveness: number = 5, notes: string = '') => {
-    const entry: MedicationEntry = {
-      id: Date.now().toString(),
-      medicationId,
-      date: selectedDate,
-      time: new Date().toTimeString().split(' ')[0],
+  if (status === 'unauthenticated') {
+    return null
+  }
+
+  const handleAddMedication = async () => {
+    if (!newMed.medication_name) return
+
+    const success = await createMedication({
+      medication_name: newMed.medication_name,
+      dosage: newMed.dosage || undefined,
+      dosage_unit: newMed.dosage_unit || undefined,
+      frequency: newMed.frequency || undefined,
+      time_of_day: newMed.time_of_day.length > 0 ? newMed.time_of_day : undefined,
+      prescribed_for: newMed.prescribed_for || undefined,
+      prescriber_name: newMed.prescriber_name || undefined,
+      started_date: newMed.started_date,
+      notes: newMed.notes || undefined
+    })
+
+    if (success) {
+      setNewMed({
+        medication_name: '',
+        dosage: '',
+        dosage_unit: '',
+        frequency: '',
+        time_of_day: [],
+        prescribed_for: '',
+        prescriber_name: '',
+        started_date: new Date().toISOString().split('T')[0],
+        notes: ''
+      })
+      setShowAddMed(false)
+    }
+  }
+
+  const handleLogMedication = async (medicationId: number, taken: boolean, sideEffects: string[] = [], moodBefore?: number, moodAfter?: number, notes: string = '') => {
+    await logMedication({
+      medication_id: medicationId,
+      taken_at: new Date().toISOString(),
       taken,
-      sideEffects,
-      effectiveness,
-      notes
-    }
-
-    setEntries(prev => [...prev, entry])
+      side_effects_experienced: sideEffects.join(', ') || undefined,
+      mood_before: moodBefore,
+      mood_after: moodAfter,
+      notes: notes || undefined
+    })
   }
 
-  const getTodaysEntries = () => {
-    return entries.filter(entry => entry.date === selectedDate)
+  const getTodaysLogs = () => {
+    const selectedDateStr = new Date(selectedDate).toISOString().split('T')[0]
+    return logs.filter(log => {
+      const logDate = new Date(log.taken_at).toISOString().split('T')[0]
+      return logDate === selectedDateStr
+    })
   }
 
-  const getMedicationEntry = (medicationId: string) => {
-    return getTodaysEntries().find(entry => entry.medicationId === medicationId)
+  const getMedicationLog = (medicationId: number) => {
+    return getTodaysLogs().find(log => log.medication_id === medicationId)
   }
 
   const exportData = () => {
     const data = {
       medications,
-      entries: entries.filter(entry => {
-        const entryDate = new Date(entry.date)
+      logs: logs.filter(log => {
+        const logDate = new Date(log.taken_at)
         const thirtyDaysAgo = new Date()
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-        return entryDate >= thirtyDaysAgo
+        return logDate >= thirtyDaysAgo
       })
     }
 
@@ -124,6 +136,9 @@ export default function MedicationTrackerPage() {
     link.click()
     URL.revokeObjectURL(url)
   }
+
+  // Filter to show only active medications by default
+  const activeMedications = medications.filter(m => m.active)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -172,8 +187,20 @@ export default function MedicationTrackerPage() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800 text-center">{error}</p>
+          </div>
+        )}
+
         {/* Medications List */}
-        {medications.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-16 bg-white rounded-xl border">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading medications...</p>
+          </div>
+        ) : activeMedications.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl border">
             <HeartIcon className="h-16 w-16 text-gray-400 mx-auto mb-6" />
             <h2 className="text-xl font-bold text-gray-900 mb-4">
@@ -191,15 +218,16 @@ export default function MedicationTrackerPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {medications.map((medication) => (
+            {activeMedications.map((medication) => (
               <MedicationCard
                 key={medication.id}
                 medication={medication}
-                entry={getMedicationEntry(medication.id)}
-                onLog={(taken, sideEffects, effectiveness, notes) => 
-                  logMedication(medication.id, taken, sideEffects, effectiveness, notes)
+                log={getMedicationLog(medication.id)}
+                onLog={(taken, sideEffects, moodBefore, moodAfter, notes) => 
+                  handleLogMedication(medication.id, taken, sideEffects, moodBefore, moodAfter, notes)
                 }
-                onDelete={() => setMedications(prev => prev.filter(m => m.id !== medication.id))}
+                onDelete={() => deleteMedication(medication.id)}
+                saving={saving}
               />
             ))}
           </div>
@@ -218,8 +246,8 @@ export default function MedicationTrackerPage() {
                   </label>
                   <input
                     type="text"
-                    value={newMed.name || ''}
-                    onChange={(e) => setNewMed(prev => ({ ...prev, name: e.target.value }))}
+                    value={newMed.medication_name}
+                    onChange={(e) => setNewMed(prev => ({ ...prev, medication_name: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="e.g., Lithium, Lamictal, Abilify"
                   />
@@ -227,14 +255,27 @@ export default function MedicationTrackerPage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Dosage *
+                    Dosage
                   </label>
                   <input
                     type="text"
-                    value={newMed.dosage || ''}
+                    value={newMed.dosage}
                     onChange={(e) => setNewMed(prev => ({ ...prev, dosage: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., 300mg, 25mg"
+                    placeholder="e.g., 300, 25"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Dosage Unit
+                  </label>
+                  <input
+                    type="text"
+                    value={newMed.dosage_unit}
+                    onChange={(e) => setNewMed(prev => ({ ...prev, dosage_unit: e.target.value }))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., mg, ml"
                   />
                 </div>
 
@@ -242,26 +283,23 @@ export default function MedicationTrackerPage() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
                     Frequency
                   </label>
-                  <select
-                    value={newMed.frequency || 'Daily'}
+                  <input
+                    type="text"
+                    value={newMed.frequency}
                     onChange={(e) => setNewMed(prev => ({ ...prev, frequency: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="Daily">Daily</option>
-                    <option value="Twice daily">Twice daily</option>
-                    <option value="Three times daily">Three times daily</option>
-                    <option value="As needed">As needed</option>
-                  </select>
+                    placeholder="e.g., Daily, Twice daily, As needed"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Prescribed By
+                    Prescriber Name
                   </label>
                   <input
                     type="text"
-                    value={newMed.prescribedBy || ''}
-                    onChange={(e) => setNewMed(prev => ({ ...prev, prescribedBy: e.target.value }))}
+                    value={newMed.prescriber_name}
+                    onChange={(e) => setNewMed(prev => ({ ...prev, prescriber_name: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Doctor name"
                   />
@@ -273,8 +311,8 @@ export default function MedicationTrackerPage() {
                   </label>
                   <input
                     type="date"
-                    value={newMed.startDate || new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setNewMed(prev => ({ ...prev, startDate: e.target.value }))}
+                    value={newMed.started_date}
+                    onChange={(e) => setNewMed(prev => ({ ...prev, started_date: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -288,10 +326,11 @@ export default function MedicationTrackerPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={addMedication}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold"
+                  onClick={handleAddMedication}
+                  disabled={saving}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  Add Medication
+                  {saving ? 'Adding...' : 'Add Medication'}
                 </button>
               </div>
             </div>
@@ -338,27 +377,30 @@ export default function MedicationTrackerPage() {
 
 function MedicationCard({ 
   medication, 
-  entry, 
+  log, 
   onLog, 
-  onDelete 
+  onDelete,
+  saving = false
 }: {
-  medication: Medication
-  entry?: MedicationEntry
-  onLog: (taken: boolean, sideEffects: string[], effectiveness: number, notes: string) => void
+  medication: { id: number; medication_name: string; dosage?: string; dosage_unit?: string; frequency?: string; prescriber_name?: string }
+  log?: { id: number; taken: boolean; taken_at: string; side_effects_experienced?: string; notes?: string }
+  onLog: (taken: boolean, sideEffects: string[], moodBefore?: number, moodAfter?: number, notes: string) => void
   onDelete: () => void
+  saving?: boolean
 }) {
   const [showLogModal, setShowLogModal] = useState(false)
   const [logData, setLogData] = useState({
     taken: true,
     sideEffects: [] as string[],
-    effectiveness: 5,
+    moodBefore: undefined as number | undefined,
+    moodAfter: undefined as number | undefined,
     notes: ''
   })
 
   const handleLog = () => {
-    onLog(logData.taken, logData.sideEffects, logData.effectiveness, logData.notes)
+    onLog(logData.taken, logData.sideEffects, logData.moodBefore, logData.moodAfter, logData.notes)
     setShowLogModal(false)
-    setLogData({ taken: true, sideEffects: [], effectiveness: 5, notes: '' })
+    setLogData({ taken: true, sideEffects: [], moodBefore: undefined, moodAfter: undefined, notes: '' })
   }
 
   const toggleSideEffect = (effect: string) => {
@@ -375,22 +417,24 @@ function MedicationCard({
       <div className="bg-white rounded-xl p-6 shadow-sm border">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-lg font-bold text-gray-900">{medication.name}</h3>
-            <p className="text-gray-600">{medication.dosage} - {medication.frequency}</p>
-            {medication.prescribedBy && (
-              <p className="text-sm text-gray-500">Prescribed by: {medication.prescribedBy}</p>
+            <h3 className="text-lg font-bold text-gray-900">{medication.medication_name}</h3>
+            <p className="text-gray-600">
+              {medication.dosage} {medication.dosage_unit || ''} - {medication.frequency || 'Not specified'}
+            </p>
+            {medication.prescriber_name && (
+              <p className="text-sm text-gray-500">Prescribed by: {medication.prescriber_name}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
-            {entry ? (
+            {log ? (
               <div className="flex items-center gap-2">
-                {entry.taken ? (
+                {log.taken ? (
                   <CheckCircleIcon className="h-6 w-6 text-green-600" />
                 ) : (
                   <XCircleIcon className="h-6 w-6 text-red-600" />
                 )}
                 <span className="text-sm text-gray-600">
-                  {entry.taken ? 'Taken' : 'Missed'} at {entry.time}
+                  {log.taken ? 'Taken' : 'Missed'} at {new Date(log.taken_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
             ) : (
@@ -405,39 +449,39 @@ function MedicationCard({
           </div>
         </div>
 
-        {entry && (
+        {log && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">Today's Log:</span>
-              <span className="text-sm text-gray-600">Effectiveness: {entry.effectiveness}/10</span>
             </div>
-            {entry.sideEffects.length > 0 && (
+            {log.side_effects_experienced && (
               <div className="mb-2">
                 <span className="text-sm font-medium text-gray-700">Side Effects: </span>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {entry.sideEffects.map(effect => (
-                    <span key={effect} className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
-                      {effect}
+                  {log.side_effects_experienced.split(',').map((effect, idx) => (
+                    <span key={idx} className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">
+                      {effect.trim()}
                     </span>
                   ))}
                 </div>
               </div>
             )}
-            {entry.notes && (
-              <p className="text-sm text-gray-600 italic">"{entry.notes}"</p>
+            {log.notes && (
+              <p className="text-sm text-gray-600 italic">"{log.notes}"</p>
             )}
           </div>
         )}
 
         <button
           onClick={() => setShowLogModal(true)}
-          className={`w-full py-2 rounded-lg font-semibold transition-colors ${
-            entry 
+          disabled={saving}
+          className={`w-full py-2 rounded-lg font-semibold transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed ${
+            log 
               ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' 
               : 'bg-blue-600 hover:bg-blue-700 text-white'
           }`}
         >
-          {entry ? 'Update Log' : 'Log Medication'}
+          {saving ? 'Saving...' : (log ? 'Update Log' : 'Log Medication')}
         </button>
       </div>
 
@@ -446,7 +490,7 @@ function MedicationCard({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-gray-900 mb-4">
-              Log {medication.name}
+              Log {medication.medication_name}
             </h3>
 
             <div className="space-y-4">
@@ -480,25 +524,6 @@ function MedicationCard({
 
               {logData.taken && (
                 <>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Effectiveness (1-10)
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={logData.effectiveness}
-                      onChange={(e) => setLogData(prev => ({ ...prev, effectiveness: Number(e.target.value) }))}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <span>Not effective</span>
-                      <span className="font-semibold">{logData.effectiveness}</span>
-                      <span>Very effective</span>
-                    </div>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Side Effects (if any)
